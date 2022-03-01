@@ -14,6 +14,7 @@ contract Factory {
 
     Pair pair = new Pair();
     address pairContract = pair.create();
+    pair.initialize(token0, token1); 
 
     getPair[token0][token1] = pairContract;
     getPair[token1][token0] = pairContract;

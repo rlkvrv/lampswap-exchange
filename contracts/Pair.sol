@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 
 import "./libraries/SafeMath.sol";
-import "./LampCoin.sol";
+import "./LampCoinInterface.sol";
 
 contract Pair {
   using SafeMath for uint;
@@ -10,7 +10,18 @@ contract Pair {
   string public constant name = "LPToken"; 
   string public constant symbol = "LPT";
   uint8 public constant decimals = 18;
-  uint public totalSupply;
+  uint public totalSupply = 10 ** decimals;
+  
+  address public factory;
+  address public token0;
+  address public token1;
+
+  uint112 private reserve0;         
+  uint112 private reserve1;
+
+  constructor() {
+    factory = msg.sender;
+  }
 
   mapping (address => mapping (address => uint256)) allowed;
   mapping (address => uint256) coinBalances;
@@ -30,11 +41,23 @@ contract Pair {
     _;
   }
 
+  function initialize(address _token0, address _token1) external {
+    require(msg.sender == factory, 'FORBIDDEN');
+    token0 = _token0;
+    token1 = _token1;
+  }
+
   function create() external view returns (address){
     return address(this);
   }
 
-  function mint(address _to, uint256 _amount) private {
+  // function stake() external view returns (uint) {
+  //     LampCoinInterface _token = LampCoinInterface(token);
+  //     _token.transferFrom(token, _to, _value);
+  //     return this.totalSupply();
+  // }
+
+  function mint(address _to, uint256 _amount) external {
     coinBalances[_to] = coinBalances[_to].add(_amount);
     totalSupply = totalSupply.add(_amount);
     emit Transfer(msg.sender, _to, _amount);
@@ -45,8 +68,6 @@ contract Pair {
     totalSupply = totalSupply.sub(_amount);
     emit Transfer(msg.sender, _from, _amount);
   }
-
-
 
   function balanceOf(address _owner) external view returns (uint256 balance) {
       return coinBalances[_owner];
@@ -82,7 +103,7 @@ contract Pair {
     checkBalance(_from, _value)
     returns (bool success)
   {
-      require(allowed[_from][msg.sender] >= _value, "Ask for permission to transfer the required number of LCT");
+      require(allowed[_from][msg.sender] >= _value, "Ask for permission to transfer the required number of LPT");
 
       coinBalances[_from] -= _value;
       coinBalances[_to] += _value;
