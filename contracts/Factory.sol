@@ -12,9 +12,8 @@ contract Factory {
     (address token0, address token1) = tokenA < tokenB ? (tokenA, tokenB) : (tokenB, tokenA);
     require(token0 != address(0), 'UniswapV2: ZERO_ADDRESS');
 
-    Pair pair = new Pair();
-    address pairContract = pair.create();
-    pair.initialize(token0, token1); 
+    Pair pair = new Pair(token0, token1);
+    address pairContract = address(pair);
 
     getPair[token0][token1] = pairContract;
     getPair[token1][token0] = pairContract;

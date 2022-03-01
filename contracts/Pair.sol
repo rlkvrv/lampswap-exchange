@@ -1,6 +1,7 @@
 //SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.0;
 
+import "hardhat/console.sol";
 import "./libraries/SafeMath.sol";
 import "./LampCoinInterface.sol";
 
@@ -19,8 +20,10 @@ contract Pair {
   uint112 private reserve0;         
   uint112 private reserve1;
 
-  constructor() {
+  constructor(address _token0, address _token1) {
     factory = msg.sender;
+    token0 = _token0;
+    token1 = _token1;
   }
 
   mapping (address => mapping (address => uint256)) allowed;
@@ -41,21 +44,14 @@ contract Pair {
     _;
   }
 
-  function initialize(address _token0, address _token1) external {
-    require(msg.sender == factory, 'FORBIDDEN');
-    token0 = _token0;
-    token1 = _token1;
-  }
-
   function create() external view returns (address){
     return address(this);
   }
 
-  // function stake() external view returns (uint) {
-  //     LampCoinInterface _token = LampCoinInterface(token);
-  //     _token.transferFrom(token, _to, _value);
-  //     return this.totalSupply();
-  // }
+  function createDeposit(address _owner, uint _amount0) external {
+    LampCoinInterface _token = LampCoinInterface(token0);
+    _token.transferFrom(_owner, address(this), _amount0);
+  }
 
   function mint(address _to, uint256 _amount) external {
     coinBalances[_to] = coinBalances[_to].add(_amount);
