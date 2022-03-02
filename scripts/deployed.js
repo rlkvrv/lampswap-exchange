@@ -23,11 +23,11 @@ async function main() {
 
   // Деплоим фабрику и создаем пару
 
-  const Factory = await ethers.getContractFactory('Factory', signer);
+  const Factory = await ethers.getContractFactory('Factory');
   const factory = await Factory.deploy();
   await factory.deployed();
   
-  //
+  // создаем пару через фабрику
   await factory.createPair(coins[0].address, coins[1].address);
   
   // получаем первую пару
@@ -72,6 +72,14 @@ async function main() {
   // проверяем резервы пары
   const reserves = await pairContract.getReserves();
   console.log('\n RESERVES: ', reserves);
+
+  // проверяем, что мы получили токены
+  console.log('\nmyWalletLPBalance: ', await pairContract.balanceOf(signer.address));
+  // проверяем, что totalSupply увеличился
+  console.log('TOTAL_SUPPLY: ', await pairContract.totalSupply());
+
+  // проверям цену
+  console.log('\n PRICE: ', await pairContract.getTokenPrice(coins[1].address, 50));
 }
 
 main()

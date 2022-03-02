@@ -20,7 +20,10 @@ contract Pair {
   uint private reserve0; 
   uint private reserve1;
 
+  uint public constant MINIMUM_LIQUIDITY = 10**3;
+
   constructor(address _token0, address _token1) {
+    require(_token0 != address(0) && _token1 != address(0), "INCORRECT ADDRESS");
     factory = msg.sender;
     token0 = _token0;
     token1 = _token1;
@@ -51,11 +54,31 @@ contract Pair {
     _token1.transferFrom(_owner, address(this), _amount1);
     reserve0 = reserve0.add(_amount0);
     reserve1 = reserve1.add(_amount1);
+    uint liquidity = _amount0 * _amount1;
+    this.mint(_owner, liquidity);
   }
 
   function getReserves() public view returns (uint _reserve0, uint _reserve1) {
       _reserve0 = reserve0;
       _reserve1 = reserve1;
+  }
+
+  function getAmount(
+    uint256 inputAmount,
+    uint256 inputReserve,
+    uint256 outputReserve
+  ) private pure returns (uint256) {
+      require(inputReserve > 0 && outputReserve > 0, "invalid reserves");
+      return (inputAmount * outputReserve) / (inputReserve + inputAmount);
+  }
+
+  function getTokenPrice(address _token, uint _amount) public view returns (uint) {
+    require(_amount > 0, "amount too small");
+    require(_token == token0 || _token == token1, "This token is not found");
+    if (_token == token0) {
+      return getAmount(_amount, reserve0, reserve1);
+    }
+    return getAmount(_amount, reserve1, reserve0);
   }
 
   function mint(address _to, uint256 _amount) external {
