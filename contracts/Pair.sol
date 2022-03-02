@@ -11,14 +11,14 @@ contract Pair {
   string public constant name = "LPToken"; 
   string public constant symbol = "LPT";
   uint8 public constant decimals = 18;
-  uint public totalSupply = 10 ** decimals;
+  uint public totalSupply;
   
   address public factory;
   address public token0;
   address public token1;
 
-  uint112 private reserve0;         
-  uint112 private reserve1;
+  uint private reserve0; 
+  uint private reserve1;
 
   constructor(address _token0, address _token1) {
     factory = msg.sender;
@@ -44,13 +44,18 @@ contract Pair {
     _;
   }
 
-  function create() external view returns (address){
-    return address(this);
+  function createDeposit(address _owner, uint _amount0, uint _amount1) external {
+    LampCoinInterface _token0 = LampCoinInterface(token0);
+    LampCoinInterface _token1 = LampCoinInterface(token1);
+    _token0.transferFrom(_owner, address(this), _amount0);
+    _token1.transferFrom(_owner, address(this), _amount1);
+    reserve0 = reserve0.add(_amount0);
+    reserve1 = reserve1.add(_amount1);
   }
 
-  function createDeposit(address _owner, uint _amount0) external {
-    LampCoinInterface _token = LampCoinInterface(token0);
-    _token.transferFrom(_owner, address(this), _amount0);
+  function getReserves() public view returns (uint _reserve0, uint _reserve1) {
+      _reserve0 = reserve0;
+      _reserve1 = reserve1;
   }
 
   function mint(address _to, uint256 _amount) external {
