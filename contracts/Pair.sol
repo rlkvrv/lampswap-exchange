@@ -47,15 +47,15 @@ contract Pair {
     _;
   }
 
-  function createDeposit(address _owner, uint _amount0, uint _amount1) external {
+  function createDeposit(uint _amount0, uint _amount1) external {
     LampCoinInterface _token0 = LampCoinInterface(token0);
     LampCoinInterface _token1 = LampCoinInterface(token1);
-    _token0.transferFrom(_owner, address(this), _amount0);
-    _token1.transferFrom(_owner, address(this), _amount1);
+    _token0.transferFrom(msg.sender, address(this), _amount0);
+    _token1.transferFrom(msg.sender, address(this), _amount1);
     reserve0 = reserve0.add(_amount0);
     reserve1 = reserve1.add(_amount1);
     uint liquidity = _amount0 * _amount1;
-    this.mint(_owner, liquidity);
+    this.mint(msg.sender, liquidity);
   }
 
   function getReserves() public view returns (uint _reserve0, uint _reserve1) {
@@ -79,6 +79,21 @@ contract Pair {
       return getAmount(_amount, reserve0, reserve1);
     }
     return getAmount(_amount, reserve1, reserve0);
+  }
+
+  function swap(address _token, uint _amount) external {
+    require(_amount > 0, "amount too small");
+    require(_token == token0 || _token == token1, "This token is not found");
+    if (_token == token0) {
+      uint _token1Bought = getAmount(_amount, reserve0, reserve1);
+      LampCoinInterface _token0 = LampCoinInterface(token0);
+      LampCoinInterface _token1 = LampCoinInterface(token1);
+      _token0.transferFrom(msg.sender, address(this), _amount);
+      _token1.transfer(msg.sender, _token1Bought);
+
+      reserve0 = reserve0.add(_amount);
+      reserve1 = reserve1.sub(_token1Bought);
+    }   
   }
 
   function mint(address _to, uint256 _amount) external {

@@ -55,7 +55,7 @@ async function main() {
   const pairContract = new ethers.Contract(pair1, abi, signer);
 
   //забираем у пользователя от имени пары на контракт пары 100 коинов 
-  await pairContract.createDeposit(signer.address, 100, 200);
+  await pairContract.createDeposit(100, 200);
 
   // проверяем что у нас стало на 100 и 200 коинов меньше, а у пары прибавилось
 
@@ -70,16 +70,26 @@ async function main() {
   console.log('BALANCE myWallet1: ', myWalletBalance1);
 
   // проверяем резервы пары
-  const reserves = await pairContract.getReserves();
-  console.log('\n RESERVES: ', reserves);
+  console.log('\n RESERVES: ', await pairContract.getReserves());
 
   // проверяем, что мы получили токены
   console.log('\nmyWalletLPBalance: ', await pairContract.balanceOf(signer.address));
   // проверяем, что totalSupply увеличился
   console.log('TOTAL_SUPPLY: ', await pairContract.totalSupply());
 
-  // проверям цену
-  console.log('\n PRICE: ', await pairContract.getTokenPrice(coins[1].address, 50));
+  
+  // 
+  await coins[0].approve(pair1, 500);
+
+  console.log('\n PRICE of token 1 for 500 tokens 0: ', await pairContract.getTokenPrice(coins[0].address, 500));
+  await pairContract.swap(coins[0].address, 500);
+
+  console.log('\nBALANCE Pair coin 0: ', await coins[0].balanceOf(pair1));
+  console.log('BALANCE Pair coin 1: ', await coins[1].balanceOf(pair1));
+  console.log('BALANCE myWallet: ', await coins[0].balanceOf(signer.address));
+  // console.log('TOTAL_SUPPLY: ', await pairContract.totalSupply());
+  console.log('\n RESERVES: ', await pairContract.getReserves());
+  // console.log('\nmyWalletLPBalance: ', await pairContract.balanceOf(signer.address));
 }
 
 main()
