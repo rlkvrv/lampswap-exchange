@@ -84,16 +84,23 @@ contract Pair {
   function swap(address _token, uint _amount) external {
     require(_amount > 0, "amount too small");
     require(_token == token0 || _token == token1, "This token is not found");
+    LampCoinInterface _token0 = LampCoinInterface(token0);
+    LampCoinInterface _token1 = LampCoinInterface(token1);
     if (_token == token0) {
       uint _token1Bought = getAmount(_amount, reserve0, reserve1);
-      LampCoinInterface _token0 = LampCoinInterface(token0);
-      LampCoinInterface _token1 = LampCoinInterface(token1);
       _token0.transferFrom(msg.sender, address(this), _amount);
       _token1.transfer(msg.sender, _token1Bought);
 
       reserve0 = reserve0.add(_amount);
       reserve1 = reserve1.sub(_token1Bought);
-    }   
+    } else {
+      uint _token0Bought = getAmount(_amount, reserve1, reserve0);
+      _token1.transferFrom(msg.sender, address(this), _amount);
+      _token0.transfer(msg.sender, _token0Bought);
+
+      reserve1 = reserve1.add(_amount);
+      reserve0 = reserve0.sub(_token0Bought);
+    }
   }
 
   function mint(address _to, uint256 _amount) external {
