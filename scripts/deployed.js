@@ -15,11 +15,8 @@ async function main() {
     coins.push(coin);
   }
 
-  // проверяем адреса созданных токенов
-
-  // coins.forEach(async (coin, index) => {
-  //   console.log(`address coin ${index + 1}: `, coin.address);
-  // });
+  // сохраняем нужные нам для тестов токены
+  const [token0, token1] = coins;
 
   // Деплоим фабрику и создаем пару
 
@@ -28,68 +25,84 @@ async function main() {
   await factory.deployed();
   
   // создаем пару через фабрику
-  await factory.createPair(coins[0].address, coins[1].address);
+  await factory.createPair(token0.address, token1.address);
   
-  // получаем первую пару
-  // даем разрешение от себя на списание с нас 100 токенов паре 1
-  // в качестве депозита
-  const pair1 = await factory.getPair(coins[0].address, coins[1].address);
-  await coins[0].approve(pair1, 100);
-  await coins[1].approve(pair1, 200);
+  // получаем адрес контракта Pair, тут пока порядок адресов не важен
+  const pair1 = await factory.getPair(token0.address, token1.address);
 
-  // Проверяем что в массиве есть пара
-  // const pairs = await factory.allPairs(0);
-
-  // проверяем, что разрешение получено и пара 1 может списать с нас 
-  // 100 токенов
-  const allowance = await coins[0].allowance(signer.address, pair1);
-  const allowance1 = await coins[1].allowance(signer.address, pair1);
-  console.log('allowance0: ', allowance);
-  console.log('allowance1: ', allowance1);
-  
-  // т.к через transferFrom пока не получается списать делаем в тупую трансфер
-  // const transfer = await coins[0].transfer(pair1, 100);
+  // проверяем количество token0 и token1 на балансах кошелька и Pair
+  console.log('\nstart BALANCE Pair token0: ', await token0.balanceOf(pair1));
+  console.log('start BALANCE Pair token1: ', await token1.balanceOf(pair1));
+  // Делаем проверку, что средства списались с кошелька
+  console.log('\nstart BALANCE myWallet token0: ', await token0.balanceOf(signer.address));
+  console.log('start BALANCE myWallet1 token1: ', await token1.balanceOf(signer.address));
 
   // для взаимодействия с контрактом пары получаем его abi
-  const { abi } = require("../artifacts/contracts/Pair.sol/Pair.json");
-  const pairContract = new ethers.Contract(pair1, abi, signer);
+  const Pair = require("../artifacts/contracts/Pair.sol/Pair.json");
+  const pairContract = new ethers.Contract(pair1, Pair.abi, signer);
 
-  //забираем у пользователя от имени пары на контракт пары 100 коинов 
+  // получаем адреса контрактов token0 и token1 для взаимодействия с ними
+  // но уже из контракта пары, потому что токены могли поменяться местами
+  const token0TrueAddress = await pairContract.token0();
+  const token1TrueAddress = await pairContract.token1();
+
+  // Получаем нужный abi
+  const Token = require("../artifacts/contracts/LampCoin.sol/LampCoin.json");
+
+  // подключаемся к этим контрактам
+  const token0Contract = new ethers.Contract(token0TrueAddress, Token.abi, signer);
+  const token1Contract = new ethers.Contract(token1TrueAddress, Token.abi, signer);
+
+  // даем разрешение на списание токенов контракту пары
+  // в качестве депозита
+  console.group('\n TRANSACTION APPROVED');
+  await token0Contract.approve(pair1, 100);
+  await token1Contract.approve(pair1, 200);
+
+  // проверяем, что разрешение получено и пара 1 может списать с нас 
+  // 100 token0 и 200 token1
+  console.log('\nALLOWANCE for token0: ', await token0Contract.allowance(signer.address, pair1));
+  console.log('ALLOWANCE for token1: ', await token1Contract.allowance(signer.address, pair1));
+  console.groupEnd();
+
+  // списываем у пользователя от имени Pair на контракт Pair
+  // 100 token0 и 200 token1
+  // то есть создаем депозит (формируем ликвидность)
+  console.group('\n CREATE DEPOSIT')
   await pairContract.createDeposit(100, 200);
 
-  // проверяем что у нас стало на 100 и 200 коинов меньше, а у пары прибавилось
+  // Делаем проверку, что средства поступили на баланс Pair
+  console.log('\nBALANCE Pair token0: ', await token0Contract.balanceOf(pair1));
+  console.log('BALANCE Pair token1: ', await token1Contract.balanceOf(pair1));
+  // Делаем проверку, что средства списались с кошелька
+  console.log('\nBALANCE myWallet token0: ', await token0Contract.balanceOf(signer.address));
+  console.log('BALANCE myWallet1 token1: ', await token1Contract.balanceOf(signer.address));
 
-  const balancePair = await coins[0].balanceOf(pair1);
-  const myWalletBalance = await coins[0].balanceOf(signer.address);
-  const balancePair1 = await coins[1].balanceOf(pair1);
-  const myWalletBalance1 = await coins[1].balanceOf(signer.address);
-
-  console.log('\nBALANCE Pair: ', balancePair);
-  console.log('BALANCE myWallet: ', myWalletBalance);
-  console.log('BALANCE Pair1: ', balancePair1);
-  console.log('BALANCE myWallet1: ', myWalletBalance1);
-
-  // проверяем резервы пары
+  // проверяем резервы Pair
   console.log('\n RESERVES: ', await pairContract.getReserves());
+  console.groupEnd();
 
-  // проверяем, что мы получили токены
-  console.log('\nmyWalletLPBalance: ', await pairContract.balanceOf(signer.address));
   // проверяем, что totalSupply увеличился
-  console.log('TOTAL_SUPPLY: ', await pairContract.totalSupply());
+  // console.log('TOTAL_SUPPLY: ', await pairContract.totalSupply());
 
   
-  // 
-  await coins[0].approve(pair1, 500);
+  // разрешаем списать еще 500 token0 для обмена на token1
+  await token0Contract.approve(pair1, 500);
 
-  console.log('\n PRICE of token 1 for 500 tokens 0: ', await pairContract.getTokenPrice(coins[0].address, 500));
-  await pairContract.swap(coins[0].address, 500);
+  console.log(
+    '\n PRICE of token 1 for 500 tokens 0: ', await pairContract.getTokenPrice(token0Contract.address, 500)
+  );
 
-  console.log('\nBALANCE Pair coin 0: ', await coins[0].balanceOf(pair1));
-  console.log('BALANCE Pair coin 1: ', await coins[1].balanceOf(pair1));
-  console.log('BALANCE myWallet: ', await coins[0].balanceOf(signer.address));
+  // делам обмен 500 token0 на token1 по рассчитанному курсу
+  console.log('\n ...token SWAP');
+  await pairContract.swap(token0Contract.address, 500);
+
+  console.log('\nBALANCE Pair token0: ', await token0Contract.balanceOf(pair1));
+  console.log('BALANCE Pair token1: ', await token1Contract.balanceOf(pair1));
+  console.log('\nBALANCE myWallet token0: ', await token0Contract.balanceOf(signer.address));
+  console.log('BALANCE myWallet token1: ', await token1Contract.balanceOf(signer.address));
   // console.log('TOTAL_SUPPLY: ', await pairContract.totalSupply());
   console.log('\n RESERVES: ', await pairContract.getReserves());
-  // console.log('\nmyWalletLPBalance: ', await pairContract.balanceOf(signer.address));
 }
 
 main()
