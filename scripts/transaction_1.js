@@ -1,5 +1,5 @@
 const { ethers } = require("hardhat");
-const pairAddress = '0x8C8e61E4705D1dbEe6DeADb39E67AC77650b0704';
+const pairAddress = '0xdE1FB1BE65a44C73761ebDABb10c4b101bc819c7';
 
 async function main() {
   const [signer] = await ethers.getSigners();
@@ -46,6 +46,8 @@ async function main() {
 
   // проверяем резервы Pair
   console.log('\n RESERVES: ', await pairContract.getReserves());
+  console.log('\n Total supply to be equal 300: ', await pairContract.totalSupply());
+  console.log('\nBALANCE myWallet LP: ', await pairContract.balanceOf(signer.address));
   console.groupEnd();
 }
 
