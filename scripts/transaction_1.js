@@ -1,5 +1,5 @@
 const { ethers } = require("hardhat");
-const pairAddress = '0xcfe53426950562347a6D2B90bE99D98167eac32d';
+const pairAddress = '0x8C8e61E4705D1dbEe6DeADb39E67AC77650b0704';
 
 async function main() {
   const [signer] = await ethers.getSigners();
@@ -34,7 +34,7 @@ async function main() {
   // списываем у пользователя от имени Pair на контракт Pair
   // 100 token0 и 200 token1
   // то есть создаем депозит (формируем ликвидность)
-  console.group('\n CREATE DEPOSIT')
+  console.group('\n TRANSACTION 1: CREATE DEPOSIT')
   await pairContract.createDeposit(100, 200);
 
   // Делаем проверку, что средства поступили на баланс Pair
@@ -47,45 +47,6 @@ async function main() {
   // проверяем резервы Pair
   console.log('\n RESERVES: ', await pairContract.getReserves());
   console.groupEnd();
-
-  // проверяем, что totalSupply увеличился
-  // console.log('TOTAL_SUPPLY: ', await pairContract.totalSupply());
-
-
-  // разрешаем списать еще 500 token0 для обмена на token1
-  await token0Contract.approve(pairAddress, 500);
-
-  console.log(
-    '\n PRICE of token1 for 500 tokens0: ', await pairContract.getTokenPrice(token0Contract.address, 500)
-  );
-
-  // делам обмен 500 token0 на token1 по рассчитанному курсу
-  console.log('\n ...token SWAP');
-  await pairContract.swap(token0Contract.address, 500);
-
-  console.log('\nBALANCE Pair token0: ', await token0Contract.balanceOf(pairAddress));
-  console.log('BALANCE Pair token1: ', await token1Contract.balanceOf(pairAddress));
-  console.log('\nBALANCE myWallet token0: ', await token0Contract.balanceOf(signer.address));
-  console.log('BALANCE myWallet token1: ', await token1Contract.balanceOf(signer.address));
-  // console.log('TOTAL_SUPPLY: ', await pairContract.totalSupply());
-  console.log('\n RESERVES: ', await pairContract.getReserves());
-
-  console.log(
-    '\n PRICE of token0 for 100 tokens1: ', await pairContract.getTokenPrice(token1Contract.address, 100)
-  );
-
-  // разрешаем списать 500 token1 для обмена на token0
-  await token1Contract.approve(pairAddress, 100);
-
-  console.log('\n ...token SWAP');
-  await pairContract.swap(token1Contract.address, 100);
-
-  console.log('\nBALANCE Pair token0: ', await token0Contract.balanceOf(pairAddress));
-  console.log('BALANCE Pair token1: ', await token1Contract.balanceOf(pairAddress));
-  console.log('\nBALANCE myWallet token0: ', await token0Contract.balanceOf(signer.address));
-  console.log('BALANCE myWallet token1: ', await token1Contract.balanceOf(signer.address));
-  // console.log('TOTAL_SUPPLY: ', await pairContract.totalSupply());
-  console.log('\n RESERVES: ', await pairContract.getReserves());
 }
 
 main()
