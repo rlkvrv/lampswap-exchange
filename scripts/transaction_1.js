@@ -1,5 +1,5 @@
 const { ethers } = require("hardhat");
-const pairAddress = '0xdE1FB1BE65a44C73761ebDABb10c4b101bc819c7';
+const pairAddress = '0x465Df401621060aE6330C13cA7A0baa2B0a9d66D';
 
 async function main() {
   const [signer] = await ethers.getSigners();
