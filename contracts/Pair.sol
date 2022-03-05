@@ -70,6 +70,19 @@ contract Pair {
     }
   }
 
+  function removeLiquidity(uint _amountLP) external {
+    require(_amountLP > 0, "Invalid amount");
+    LampCoinInterface _token0 = LampCoinInterface(token0);
+    LampCoinInterface _token1 = LampCoinInterface(token1);
+    uint token0Amount = reserve0 * _amountLP / totalSupply;
+    uint token1Amount = reserve1 * _amountLP / totalSupply;
+    burn(msg.sender, _amountLP);
+    _token0.transfer(msg.sender, token0Amount);
+    _token1.transfer(msg.sender, token1Amount);
+    reserve0 = reserve0.sub(token0Amount);
+    reserve1 = reserve1.sub(token1Amount);
+  }
+
   function getReserves() public view returns (uint _reserve0, uint _reserve1) {
       _reserve0 = reserve0;
       _reserve1 = reserve1;
