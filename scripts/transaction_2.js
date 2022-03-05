@@ -1,5 +1,5 @@
 const { ethers } = require("hardhat");
-const pairAddress = '0x4f6d9Fd7e4CE9A64b1d3e62C6fa9cF186b5e8C3d';
+const pairAddress = '0xe3686721b062Da0B181140362A1ca5f2d3E43fBA';
 
 // тут мы проверям цену и свопаем token1 на token0
 
@@ -24,15 +24,15 @@ async function main() {
   console.log('\n TRANSACTION 2: SWAP of token1 for token0')
 
   // разрешаем списать еще 500 token0 для обмена на token1
-  await token0Contract.approve(pairAddress, 500);
+  await token0Contract.approve(pairAddress, 10);
 
   console.log(
-    '\n PRICE of token1 for 500 tokens0: ', await pairContract.getTokenPrice(token0Contract.address, 500)
+    '\n PRICE of token1 for 10 tokens0: ', await pairContract.getTokenPrice(token0Contract.address, 10)
   );
 
   // делам обмен 500 token0 на token1 по рассчитанному курсу
   console.log('...token SWAP');
-  await pairContract.swap(token0Contract.address, 500);
+  await pairContract.swap(token0Contract.address, 10);
 
   console.log('\nBALANCE Pair token0: ', await token0Contract.balanceOf(pairAddress));
   console.log('BALANCE Pair token1: ', await token1Contract.balanceOf(pairAddress));

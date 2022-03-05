@@ -1,5 +1,5 @@
 const { ethers } = require("hardhat");
-const pairAddress = '0x4f6d9Fd7e4CE9A64b1d3e62C6fa9cF186b5e8C3d';
+const pairAddress = '0xaf4181d7208912b151d1BA11d22EA4e24FF500ce';
 
 // Эта транзакция проверяет, что другой кошелек может
 // добавить ликвидности

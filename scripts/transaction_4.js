@@ -1,5 +1,5 @@
 const { ethers } = require("hardhat");
-const pairAddress = '0xaf4181d7208912b151d1BA11d22EA4e24FF500ce';
+const pairAddress = '0xe3686721b062Da0B181140362A1ca5f2d3E43fBA';
 
 // тут обмениваем наши LP токены на token0 и token1, удаляем ликвидность
 
@@ -22,7 +22,7 @@ async function main() {
   const token1Contract = new ethers.Contract(token1TrueAddress, Token.abi, signer);
 
   console.log('\n TRANSACTION 4: removed liquidity')
-  await pairContract.removeLiquidity(298);
+  await pairContract.removeLiquidity(300);
 
   console.log('\nBALANCE Pair token0: ', await token0Contract.balanceOf(pairAddress));
   console.log('BALANCE Pair token1: ', await token1Contract.balanceOf(pairAddress));
