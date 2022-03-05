@@ -81,7 +81,10 @@ contract Pair {
     uint256 outputReserve
   ) private pure returns (uint256) {
       require(inputReserve > 0 && outputReserve > 0, "invalid reserves");
-      return (inputAmount * outputReserve) / (inputReserve + inputAmount);
+      uint inputAmountWithFee = inputAmount * 99;
+      uint numerator = inputAmountWithFee * outputReserve;
+      uint denominator = (inputReserve * 100) + inputAmountWithFee;
+      return numerator / denominator;
   }
 
   function getTokenPrice(address _token, uint _amount) public view returns (uint) {
