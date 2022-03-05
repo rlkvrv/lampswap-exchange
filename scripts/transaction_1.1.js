@@ -1,15 +1,14 @@
 const { ethers } = require("hardhat");
 const pairAddress = '0x4f6d9Fd7e4CE9A64b1d3e62C6fa9cF186b5e8C3d';
 
-// Эта транзакция создает пул ликвидности
-// если вызвать несколько раз, то можно проверить
-// как пополняется депозит и минтятся LP токены
+// Эта транзакция проверяет, что другой кошелек может
+// добавить ликвидности
 
 async function main() {
-  const [signer] = await ethers.getSigners();
+  const [signer, secondSigner] = await ethers.getSigners();
   // для взаимодействия с контрактом пары получаем его abi
   const Pair = require("../artifacts/contracts/Pair.sol/Pair.json");
-  const pairContract = new ethers.Contract(pairAddress, Pair.abi, signer);
+  const pairContract = new ethers.Contract(pairAddress, Pair.abi, secondSigner);
 
   // получаем адреса контрактов token0 и token1 для взаимодействия с ними
   // но уже из контракта пары, потому что токены могли поменяться местами
@@ -20,8 +19,14 @@ async function main() {
   const Token = require("../artifacts/contracts/LampCoin.sol/LampCoin.json");
 
   // подключаемся к этим контрактам
-  const token0Contract = new ethers.Contract(token0TrueAddress, Token.abi, signer);
-  const token1Contract = new ethers.Contract(token1TrueAddress, Token.abi, signer);
+  const token0Contract = new ethers.Contract(token0TrueAddress, Token.abi, secondSigner);
+  const token1Contract = new ethers.Contract(token1TrueAddress, Token.abi, secondSigner);
+
+  await token0Contract.connect(signer).transfer(secondSigner.address, 100);
+  await token1Contract.connect(signer).transfer(secondSigner.address, 200);
+  console.log('\nSecond Signer balance token0: ', await token0Contract.balanceOf(secondSigner.address));
+  console.log('Second Signer balance token1: ', await token1Contract.balanceOf(secondSigner.address));
+
 
   // даем разрешение на списание токенов контракту пары
   // в качестве депозита
@@ -31,8 +36,8 @@ async function main() {
 
   // проверяем, что разрешение получено и пара 1 может списать с нас 
   // 100 token0 и 200 token1
-  console.log('\nALLOWANCE for token0: ', await token0Contract.allowance(signer.address, pairAddress));
-  console.log('ALLOWANCE for token1: ', await token1Contract.allowance(signer.address, pairAddress));
+  console.log('\nALLOWANCE for token0: ', await token0Contract.allowance(secondSigner.address, pairAddress));
+  console.log('ALLOWANCE for token1: ', await token1Contract.allowance(secondSigner.address, pairAddress));
   console.groupEnd();
 
   // списываем у пользователя от имени Pair на контракт Pair
@@ -45,13 +50,13 @@ async function main() {
   console.log('\nBALANCE Pair token0: ', await token0Contract.balanceOf(pairAddress));
   console.log('BALANCE Pair token1: ', await token1Contract.balanceOf(pairAddress));
   // Делаем проверку, что средства списались с кошелька
-  console.log('\nBALANCE myWallet token0: ', await token0Contract.balanceOf(signer.address));
-  console.log('BALANCE myWallet1 token1: ', await token1Contract.balanceOf(signer.address));
+  console.log('\nBALANCE myWallet token0: ', await token0Contract.balanceOf(secondSigner.address));
+  console.log('BALANCE myWallet1 token1: ', await token1Contract.balanceOf(secondSigner.address));
 
   // проверяем резервы Pair
   console.log('\n RESERVES: ', await pairContract.getReserves());
   console.log('\n Total supply: ', await pairContract.totalSupply());
-  console.log('\nBALANCE myWallet LP: ', await pairContract.balanceOf(signer.address));
+  console.log('\nBALANCE myWallet LP: ', await pairContract.balanceOf(secondSigner.address));
   console.groupEnd();
 }
 

@@ -1,5 +1,7 @@
 const { ethers } = require("hardhat");
-const pairAddress = '0x8C8e61E4705D1dbEe6DeADb39E67AC77650b0704';
+const pairAddress = '0x4f6d9Fd7e4CE9A64b1d3e62C6fa9cF186b5e8C3d';
+
+// тут мы проверям цену и свопаем token1 на token0
 
 async function main() {
   const [signer] = await ethers.getSigners();
