@@ -55,7 +55,7 @@ contract Pair {
       _token0.transferFrom(msg.sender, address(this), _amount0);
       _token1.transferFrom(msg.sender, address(this), _amount1);
       liquidity = _amount0 + _amount1;
-      this.mint(msg.sender, liquidity);
+      mint(msg.sender, liquidity);
       reserve0 = reserve0.add(_amount0);
       reserve1 = reserve1.add(_amount1);
     } else {
@@ -64,7 +64,7 @@ contract Pair {
       _token0.transferFrom(msg.sender, address(this), _amount0);
       _token1.transferFrom(msg.sender, address(this), _amount1);
       liquidity = (totalSupply * _amount0) / reserve0;
-      this.mint(msg.sender, liquidity);
+      mint(msg.sender, liquidity);
       reserve0 = reserve0.add(_amount0);
       reserve1 = reserve1.add(_amount1);
     }
@@ -131,7 +131,7 @@ contract Pair {
     }
   }
 
-  function mint(address _to, uint256 _amount) external {
+  function mint(address _to, uint256 _amount) private {
     coinBalances[_to] = coinBalances[_to].add(_amount);
     totalSupply = totalSupply.add(_amount);
     emit Transfer(msg.sender, _to, _amount);
