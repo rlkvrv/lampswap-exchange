@@ -1,5 +1,5 @@
 const { ethers } = require("hardhat");
-const pairAddress = '0xe3686721b062Da0B181140362A1ca5f2d3E43fBA';
+const pairAddress = '0x553BED26A78b94862e53945941e4ad6E4F2497da';
 
 // тут обмениваем наши LP токены на token0 и token1, удаляем ликвидность
 
