@@ -37,11 +37,11 @@ describe("Pair", function () {
     token1Contract = new ethers.Contract(token1TrueAddress, Token.abi, acc2);
   })
 
-  it("should be deployed", async function () {
+  it("контракт пары должен быть задеплоен", async function () {
     expect(pairContract.address).to.be.properAddress;
   });
 
-  it("totalSupply should be equal 0", async function () {
+  it("totalSupply должен быть равен 0", async function () {
     const balance = await pairContract.totalSupply();
     expect(balance).to.be.equal(0);
   });
@@ -52,12 +52,12 @@ describe("Pair", function () {
       await token1Contract.connect(acc1).approve(pairContract.address, 200);
     });
 
-    it("should be approved", async () => {
+    it("должно быть выдано подтверждение для transferFrom", async () => {
       expect(await token0Contract.allowance(acc1.address, pairContract.address)).to.be.eq(100);
       expect(await token1Contract.allowance(acc1.address, pairContract.address)).to.be.eq(200);
     });
 
-    it("add liquidity", async () => {
+    it("ликвидность должна добавиться", async () => {
       await pairContract.connect(acc1).createDeposit(100, 200);
       expect(await token0Contract.balanceOf(pairContract.address)).to.be.eq(100);
       expect(await token1Contract.balanceOf(pairContract.address)).to.be.eq(200);
@@ -67,7 +67,7 @@ describe("Pair", function () {
       expect(reserves[1]).to.be.eq(200);
     });
 
-    it("allows zero amounts", async () => {
+    it("должен добавить нулевую ликвидность", async () => {
       await token0Contract.connect(acc1).approve(pairContract.address, 0);
       await token1Contract.connect(acc1).approve(pairContract.address, 0);
       await pairContract.connect(acc1).createDeposit(0, 0);
@@ -77,12 +77,24 @@ describe("Pair", function () {
       expect(reserves[1]).to.be.eq(0);
     });
 
-    it("should be created LP tokens (300LP)", async () => {
+    it("ликвидность должна добавляться в правильном соотношении, иначе ошибка", async () => {
+      await token0Contract.connect(acc1).approve(pairContract.address, 100);
+      await token1Contract.connect(acc1).approve(pairContract.address, 200);
+      await pairContract.connect(acc1).createDeposit(10, 20)
+      await expect(pairContract.connect(acc1).createDeposit(10, 40)).to.be.revertedWith('Insufficient token0 amount')
+      await expect(pairContract.connect(acc1).createDeposit(20, 20)).to.be.revertedWith('Insufficient token1 amount')
+
+      const reserves = await pairContract.connect(acc1).getReserves();
+      expect(reserves[0]).to.be.eq(10);
+      expect(reserves[1]).to.be.eq(20);
+    });
+
+    it("должен сминтить LP tokens (300LP)", async () => {
       await pairContract.connect(acc1).createDeposit(100, 200);
       expect(await pairContract.balanceOf(acc1.address)).to.be.eq(300);
     });
 
-    it("totalSupply should be equal 300", async () => {
+    it("totalSupply должен быть равен 300", async () => {
       await pairContract.connect(acc1).createDeposit(100, 200);
       expect(await pairContract.totalSupply()).to.be.eq(300);
     });
@@ -95,20 +107,21 @@ describe("Pair", function () {
       await pairContract.connect(acc1).createDeposit(100, 200);
     });
     
-    it("price of token1 for 10 tokens0 should be equal 18 token1", async () => {
+    
+    it("цена token1 за 10 tokens0 должна равняться 18 token1", async () => {
       expect(await pairContract.getTokenPrice(token0Contract.address, 10)).to.be.eq(18);
     });
-
-    it("should make a token0 exchange for token1", async () => {
+    
+    it("должен обменять token0 на token1", async () => {
       await token0Contract.connect(acc1).approve(pairContract.address, 10);
       await pairContract.connect(acc1).swap(token0Contract.address, 10);
-
+      
       expect(await token0Contract.balanceOf(pairContract.address)).to.be.eq(110);
       expect(await token1Contract.balanceOf(pairContract.address)).to.be.eq(182);
+
       expect(await token0Contract.balanceOf(acc1.address)).to.be.eq(9890);
       expect(await token1Contract.balanceOf(acc1.address)).to.be.eq(19818);
     });
-  });
 
   describe("Removed liquidity", async () => {
     beforeEach(async () => {
@@ -119,7 +132,7 @@ describe("Pair", function () {
       await pairContract.connect(acc1).swap(token0Contract.address, 10);
     });
     
-    it("price of token1 for 10 tokens0 should be equal 18 token1", async () => {
+    it("после удаления ликвидности средства должны вернуться на счет с комиссией, а LP должны быть сожжены", async () => {
       await pairContract.connect(acc1).removeLiquidity(300);
       expect(await pairContract.balanceOf(acc1.address)).to.be.eq(0);
       expect(await token0Contract.balanceOf(pairContract.address)).to.be.eq(0);

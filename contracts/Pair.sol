@@ -59,7 +59,9 @@ contract Pair {
       reserve0 = reserve0.add(_amount0);
       reserve1 = reserve1.add(_amount1);
     } else {
+      uint token0Amount = (_amount1 * reserve0) / reserve1;
       uint token1Amount = (_amount0 * reserve1) / reserve0;
+      require(_amount0 >= token0Amount, "Insufficient token0 amount");
       require(_amount1 >= token1Amount, "Insufficient token1 amount");
       _token0.transferFrom(msg.sender, address(this), _amount0);
       _token1.transferFrom(msg.sender, address(this), _amount1);
