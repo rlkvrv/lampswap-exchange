@@ -96,9 +96,11 @@ contract Pair {
     uint256 outputReserve
   ) private pure returns (uint256) {
       require(inputReserve > 0 && outputReserve > 0, "invalid reserves");
-      uint inputAmountWithFee = inputAmount * 99;
-      uint numerator = inputAmountWithFee * outputReserve;
-      uint denominator = (inputReserve * 100) + inputAmountWithFee;
+      uint fee = 1;
+      uint feeDecimals = 2;
+      uint inputAmountWithFee = inputAmount - inputAmount * fee / 10**feeDecimals;
+      uint numerator = outputReserve * inputAmountWithFee;
+      uint denominator = inputReserve + inputAmountWithFee;
       return numerator / denominator;
   }
 
