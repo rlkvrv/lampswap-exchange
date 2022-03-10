@@ -61,7 +61,7 @@ describe("Pair", function () {
       await pairContract.connect(acc1).createDeposit(100, 200);
       expect(await token0Contract.balanceOf(pairContract.address)).to.be.eq(100);
       expect(await token1Contract.balanceOf(pairContract.address)).to.be.eq(200);
-      
+
       const reserves = await pairContract.getReserves();
       expect(reserves[0]).to.be.eq(100);
       expect(reserves[1]).to.be.eq(200);
@@ -106,22 +106,24 @@ describe("Pair", function () {
       await token1Contract.connect(acc1).approve(pairContract.address, 200);
       await pairContract.connect(acc1).createDeposit(100, 200);
     });
-    
-    
+
+
     it("цена token1 за 10 tokens0 должна равняться 18 token1", async () => {
       expect(await pairContract.getTokenPrice(token0Contract.address, 10)).to.be.eq(18);
     });
-    
+
     it("должен обменять token0 на token1", async () => {
       await token0Contract.connect(acc1).approve(pairContract.address, 10);
       await pairContract.connect(acc1).swap(token0Contract.address, 10);
-      
+
       expect(await token0Contract.balanceOf(pairContract.address)).to.be.eq(110);
       expect(await token1Contract.balanceOf(pairContract.address)).to.be.eq(182);
 
       expect(await token0Contract.balanceOf(acc1.address)).to.be.eq(9890);
       expect(await token1Contract.balanceOf(acc1.address)).to.be.eq(19818);
     });
+  });
+
 
   describe("Removed liquidity", async () => {
     beforeEach(async () => {
@@ -131,7 +133,7 @@ describe("Pair", function () {
       await token0Contract.connect(acc1).approve(pairContract.address, 10);
       await pairContract.connect(acc1).swap(token0Contract.address, 10);
     });
-    
+
     it("после удаления ликвидности средства должны вернуться на счет с комиссией, а LP должны быть сожжены", async () => {
       await pairContract.connect(acc1).removeLiquidity(300);
       expect(await pairContract.balanceOf(acc1.address)).to.be.eq(0);
