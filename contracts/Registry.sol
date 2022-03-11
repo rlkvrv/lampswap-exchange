@@ -2,8 +2,9 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "./RegistryInterface.sol";
 
-contract Registry is Ownable {
+contract Registry is RegistryInterface, Ownable {
     address public fabric;
     address[] public allPairs;
 
@@ -14,7 +15,7 @@ contract Registry is Ownable {
         _;
     }
 
-    function setFabric(address _fabric) external onlyOwner {
+    function setFabric(address _fabric) external override onlyOwner {
         fabric = _fabric;
     }
 
@@ -22,7 +23,7 @@ contract Registry is Ownable {
         address token0,
         address token1,
         address pairAddress
-    ) external onlyFabric {
+    ) external override onlyFabric {
         getPairAddress[token0][token1] = pairAddress;
         getPairAddress[token1][token0] = pairAddress;
     }
@@ -30,6 +31,7 @@ contract Registry is Ownable {
     function getPair(address token0, address token1)
         external
         view
+        override
         returns (address pairAddress)
     {
         pairAddress = getPairAddress[token0][token1];
