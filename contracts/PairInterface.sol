@@ -3,40 +3,28 @@
 pragma solidity ^0.8.0;
 
 interface PairInterface {
-    function createDeposit(uint256 _amount0, uint256 _amount1) external;
+    function setRouter(address _router) external;
 
-    function removeLiquidity(uint256 _amountLP) external;
+    function addLiquidity(
+        address token0,
+        address token1,
+        uint256 amount0,
+        uint256 amount1
+    ) external;
 
-    function getReserves()
-        external
-        view
-        returns (uint256 _reserve0, uint256 _reserve1);
+    function removeLiquidity(uint256 lpAmount) external;
 
-    function getTokenPrice(address _token, uint256 _amount)
-        external
-        view
-        returns (uint256);
+    function swapIn(
+        address tokenIn,
+        address tokenOut,
+        uint256 amountIn,
+        address recipient
+    ) external returns (uint256 amountOut);
 
-    function swap(address _token, uint256 _amount) external;
-
-    function balanceOf(address _owner) external view returns (uint256 balance);
-
-    function allowance(address _owner, address _spender)
-        external
-        view
-        returns (uint256 remaining);
-
-    function transfer(address _to, uint256 _value)
-        external
-        returns (bool success);
-
-    function transferFrom(
-        address _from,
-        address _to,
-        uint256 _value
-    ) external returns (bool success);
-
-    function approve(address _spender, uint256 _value)
-        external
-        returns (bool success);
+    function swapOut(
+        address tokenIn,
+        address tokenOut,
+        uint256 amountOut,
+        address recipient
+    ) external returns (uint256 amountIn);
 }
