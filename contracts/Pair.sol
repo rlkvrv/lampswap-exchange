@@ -1,121 +1,79 @@
-//SPDX-License-Identifier: Unlicense
+//SPDX-License-Identifier: MIT
+
 pragma solidity ^0.8.0;
 
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 import "hardhat/console.sol";
 import "./libraries/SafeMath.sol";
-import "./LampCoinInterface.sol";
 
-contract Pair {
+contract Pair is ERC20, ReentrancyGuard, Ownable {
     using SafeMath for uint256;
 
-    string public constant name = "LPToken";
-    string public constant symbol = "LPT";
-    uint8 public constant decimals = 18;
-    uint256 public totalSupply;
+    address token0;
+    address token1;
+    address public router;
+    uint256 public reserve0;
+    uint256 public reserve1;
 
-    address private _factory;
-    address public token0;
-    address public token1;
-
-    uint256 private reserve0;
-    uint256 private reserve1;
-
-    constructor(address _token0, address _token1) {
-    require(
-            _token0 != address(0) && _token1 != address(0),
-            "INCORRECT ADDRESS"
-        );
-        _factory = msg.sender;
+    constructor(
+        address _token0,
+        address _token1,
+        address _router
+    ) ERC20("LPToken", "LPT") {
         token0 = _token0;
         token1 = _token1;
+        router = _router;
     }
 
-    mapping(address => mapping(address => uint256)) private allowed;
-    mapping(address => uint256) private coinBalances;
-
-    event Transfer(address indexed _from, address indexed _to, uint256 _value);
-    event Approval(
-        address indexed _owner,
-        address indexed _spender,
-        uint256 _value
-    );
-    event Mint(address indexed sender, uint256 amount0, uint256 amount1);
-
-    modifier receiverOverflow(address _to, uint256 _value) {
-        require(
-            coinBalances[_to] + _value >= coinBalances[_to],
-            "Recipient's wallet overflow"
-        );
+    modifier onlyRouter() {
+        require(router == msg.sender, "Ownable: caller is not the router");
         _;
     }
 
-    modifier checkBalance(address _sender, uint256 _value) {
-        require(
-            coinBalances[_sender] >= _value,
-            "Insufficient funds from the sender"
-        );
-        _;
+    function setRouter(address _router) external onlyOwner {
+        router = _router;
     }
 
-    function _getAmount(
-        uint256 inputAmount,
-        uint256 inputReserve,
-        uint256 outputReserve
-    ) private pure returns (uint256) {
-        require(inputReserve > 0 && outputReserve > 0, "invalid reserves");
-        uint256 fee = 1;
-        uint256 feeDecimals = 2;
-        uint256 inputAmountWithFee = inputAmount -
-            (inputAmount * fee) /
-            10**feeDecimals;
-        uint256 numerator = outputReserve * inputAmountWithFee;
-        uint256 denominator = inputReserve + inputAmountWithFee;
-        return numerator / denominator;
-    }
-
-    function _mint(address _to, uint256 _amount) private {
-        coinBalances[_to] = coinBalances[_to].add(_amount);
-        totalSupply = totalSupply.add(_amount);
-        emit Transfer(msg.sender, _to, _amount);
-    }
-
-    function _burn(address _from, uint256 _amount) private {
-        coinBalances[_from] = coinBalances[_from].sub(_amount);
-        totalSupply = totalSupply.sub(_amount);
-        emit Transfer(msg.sender, _from, _amount);
-    }
-
-    function createDeposit(uint256 _amount0, uint256 _amount1) external {
-        LampCoinInterface _token0 = LampCoinInterface(token0);
-        LampCoinInterface _token1 = LampCoinInterface(token1);
+    function addLiquidity(
+        address coin0,
+        address coin1,
+        uint256 amount0,
+        uint256 amount1
+    ) external nonReentrant {
+        ERC20 _token0 = ERC20(coin0);
+        ERC20 _token1 = ERC20(coin1);
         uint256 liquidity;
         if (reserve0 == 0) {
-            _token0.transferFrom(msg.sender, address(this), _amount0);
-            _token1.transferFrom(msg.sender, address(this), _amount1);
-            liquidity = _amount0 + _amount1;
+            _token0.transferFrom(msg.sender, address(this), amount0);
+            _token1.transferFrom(msg.sender, address(this), amount1);
+            liquidity = amount0.add(amount1);
             _mint(msg.sender, liquidity);
-            reserve0 = reserve0.add(_amount0);
-            reserve1 = reserve1.add(_amount1);
+            reserve0 = reserve0.add(amount0);
+            reserve1 = reserve1.add(amount1);
         } else {
-            uint256 token0Amount = (_amount1 * reserve0) / reserve1;
-            uint256 token1Amount = (_amount0 * reserve1) / reserve0;
-            require(_amount0 >= token0Amount, "Insufficient token0 amount");
-            require(_amount1 >= token1Amount, "Insufficient token1 amount");
-            _token0.transferFrom(msg.sender, address(this), _amount0);
-            _token1.transferFrom(msg.sender, address(this), _amount1);
-            liquidity = (totalSupply * _amount0) / reserve0;
+            uint256 token0Amount = (amount1.mul(reserve0)).div(reserve1);
+            uint256 token1Amount = (amount0.mul(reserve1)).div(reserve0);
+            require(amount0 >= token0Amount, "Insufficient token0 amount");
+            require(amount1 >= token1Amount, "Insufficient token1 amount");
+            _token0.transferFrom(msg.sender, address(this), amount0);
+            _token1.transferFrom(msg.sender, address(this), amount1);
+            uint256 _totalSupply = this.totalSupply();
+            liquidity = (_totalSupply.mul(amount0)).div(reserve0);
             _mint(msg.sender, liquidity);
-            reserve0 = reserve0.add(_amount0);
-            reserve1 = reserve1.add(_amount1);
+            reserve0 = reserve0.add(amount0);
+            reserve1 = reserve1.add(amount1);
         }
     }
 
-    function removeLiquidity(uint256 _amountLP) external {
+    function removeLiquidity(uint256 _amountLP) external nonReentrant {
         require(_amountLP > 0, "Invalid amount");
-        LampCoinInterface _token0 = LampCoinInterface(token0);
-        LampCoinInterface _token1 = LampCoinInterface(token1);
-        uint256 token0Amount = (reserve0 * _amountLP) / totalSupply;
-        uint256 token1Amount = (reserve1 * _amountLP) / totalSupply;
+        ERC20 _token0 = ERC20(token0);
+        ERC20 _token1 = ERC20(token1);
+        uint256 _totalSupply = this.totalSupply();
+        uint256 token0Amount = (reserve0.mul(_amountLP)).div(_totalSupply);
+        uint256 token1Amount = (reserve1.mul(_amountLP)).div(_totalSupply);
         _burn(msg.sender, _amountLP);
         _token0.transfer(msg.sender, token0Amount);
         _token1.transfer(msg.sender, token1Amount);
@@ -123,13 +81,31 @@ contract Pair {
         reserve1 = reserve1.sub(token1Amount);
     }
 
-    function getReserves()
-        external
-        view
-        returns (uint256 _reserve0, uint256 _reserve1)
-    {
-        _reserve0 = reserve0;
-        _reserve1 = reserve1;
+    function swapIn(
+        address tokenIn,
+        address tokenOut,
+        uint256 amountIn,
+        address recipient
+    ) external onlyRouter nonReentrant returns (uint256 amountOut) {
+        require(amountIn > 0, "amount too small");
+        require(
+            tokenIn == token0 || tokenIn == token1,
+            "This tokenIn is not found"
+        );
+        require(
+            tokenOut == token0 || tokenOut == token1,
+            "This tokenOut is not found"
+        );
+        amountOut = this.getTokenPrice(tokenIn, amountIn);
+    }
+
+    function swapOut(
+        address tokenIn,
+        address tokenOut,
+        uint256 amountOut,
+        address recipient
+    ) external onlyRouter nonReentrant returns (uint256 amountIn) {
+        amountIn = 0;
     }
 
     function getTokenPrice(address _token, uint256 _amount)
@@ -148,86 +124,19 @@ contract Pair {
         return _getAmount(_amount, reserve1, reserve0);
     }
 
-    function swap(address _token, uint256 _amount) external {
-        require(_amount > 0, "amount too small");
-        require(
-            _token == token0 || _token == token1,
-            "This token is not found"
-        );
-        LampCoinInterface _token0 = LampCoinInterface(token0);
-        LampCoinInterface _token1 = LampCoinInterface(token1);
-        if (_token == token0) {
-            uint256 _token1Bought = _getAmount(_amount, reserve0, reserve1);
-            _token0.transferFrom(msg.sender, address(this), _amount);
-            _token1.transfer(msg.sender, _token1Bought);
-
-            reserve0 = reserve0.add(_amount);
-            reserve1 = reserve1.sub(_token1Bought);
-        } else {
-            uint256 _token0Bought = _getAmount(_amount, reserve1, reserve0);
-            _token1.transferFrom(msg.sender, address(this), _amount);
-            _token0.transfer(msg.sender, _token0Bought);
-
-            reserve1 = reserve1.add(_amount);
-            reserve0 = reserve0.sub(_token0Bought);
-        }
-    }
-
-    function balanceOf(address _owner) external view returns (uint256 balance) {
-        return coinBalances[_owner];
-    }
-
-    function allowance(address _owner, address _spender)
-        external
-        view
-        returns (uint256 remaining)
-    {
-        return allowed[_owner][_spender];
-    }
-
-    function transfer(address _to, uint256 _value)
-        external
-        receiverOverflow(_to, _value)
-        checkBalance(msg.sender, _value)
-        returns (bool success)
-    {
-        coinBalances[msg.sender] -= _value;
-        coinBalances[_to] += _value;
-
-        emit Transfer(msg.sender, _to, _value);
-        return true;
-    }
-
-    function transferFrom(
-        address _from,
-        address _to,
-        uint256 _value
-    )
-        external
-        receiverOverflow(_to, _value)
-        checkBalance(_from, _value)
-        returns (bool success)
-    {
-        require(
-            allowed[_from][msg.sender] >= _value,
-            "Ask for permission to transfer the required number of LPT"
-        );
-
-        coinBalances[_from] -= _value;
-        coinBalances[_to] += _value;
-        allowed[_from][msg.sender] -= _value;
-
-        emit Transfer(_from, _to, _value);
-        return true;
-    }
-
-    function approve(address _spender, uint256 _value)
-        external
-        returns (bool success)
-    {
-        allowed[msg.sender][_spender] = _value;
-
-        emit Approval(msg.sender, _spender, _value);
-        return true;
+    function _getAmount(
+        uint256 inputAmount,
+        uint256 inputReserve,
+        uint256 outputReserve
+    ) private pure returns (uint256) {
+        require(inputReserve > 0 && outputReserve > 0, "invalid reserves");
+        uint256 fee = 1;
+        uint256 feeDecimals = 2;
+        uint256 inputAmountWithFee = inputAmount -
+            (inputAmount * fee) /
+            10**feeDecimals;
+        uint256 numerator = outputReserve * inputAmountWithFee;
+        uint256 denominator = inputReserve + inputAmountWithFee;
+        return numerator / denominator;
     }
 }
