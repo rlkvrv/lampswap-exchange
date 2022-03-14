@@ -1,28 +1,26 @@
-//SPDX-License-Identifier: Unlicense
+//SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
+import "@openzeppelin/contracts/access/Ownable.sol";
 import "./Pair.sol";
+import "./RegistryInterface.sol";
 
-contract Factory {
-    mapping(address => mapping(address => address)) public getPair;
-    address[] public allPairs;
+contract Factory is Ownable {
+    address public router;
+    address public registry;
 
-    function createPair(address tokenA, address tokenB)
-        external
-        returns (address)
-    {
-        require(tokenA != tokenB, "Identical addresses");
-        (address token0, address token1) = tokenA < tokenB
-            ? (tokenA, tokenB)
-            : (tokenB, tokenA);
-        require(token0 != address(0), "UniswapV2: ZERO_ADDRESS");
+    function setRouter(address _router) external onlyOwner {
+        router = _router;
+    }
 
-        Pair pair = new Pair(token0, token1);
-        address pairContract = address(pair);
+    function setRegistry(address _registry) external onlyOwner {
+        registry = _registry;
+    }
 
-        getPair[token0][token1] = pairContract;
-        getPair[token1][token0] = pairContract;
-        allPairs.push(pairContract);
-        return pairContract;
+    function createPair(address token0, address token1) external {
+        Pair pair = new Pair(token0, token1, router);
+        RegistryInterface _registry = RegistryInterface(registry);
+        // pair.transferOwnership(msg.sender);
+        _registry.setPair(token0, token1, address(pair));
     }
 }
