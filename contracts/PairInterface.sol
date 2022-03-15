@@ -18,6 +18,7 @@ interface PairInterface {
         address tokenIn,
         address tokenOut,
         uint256 amountIn,
+        uint256 minAmountOut,
         address recipient
     ) external returns (uint256 amountOut);
 
@@ -25,6 +26,7 @@ interface PairInterface {
         address tokenIn,
         address tokenOut,
         uint256 amountOut,
+        uint256 maxAmountIn,
         address recipient
     ) external returns (uint256 amountIn);
 }

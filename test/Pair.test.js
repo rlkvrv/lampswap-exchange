@@ -152,8 +152,32 @@ describe("Pair", function () {
 
     it("only router can make a swap transaction", async () => {
       await expect(
-        pair.connect(acc1).swapIn(acc1Token0.address, acc1Token1.address, 10, acc1.address)
+        pair.connect(acc1).swapIn(acc1Token0.address, acc1Token1.address, 10, 10, acc1.address)
       ).to.be.revertedWith('Ownable: caller is not the router');
+    });
+
+    it("swapIn should be swap of token0 to token1 if amountOut >= minAmountOut", async () => {
+      await acc1Token0.connect(acc1).approve(pair.address, 10);
+      await pair.connect(router).swapIn(acc1Token0.address, acc1Token1.address, 10, 18, acc1.address);
+      expect(await acc1Token0.balanceOf(acc1.address)).to.be.eq(9890);
+      expect(await acc1Token1.balanceOf(acc1.address)).to.be.eq(19818);
+    });
+
+    it("swapOut should be swap of token0 to token1 if maxAmountIn >= amountIn", async () => {
+      await acc1Token0.connect(acc1).approve(pair.address, 10);
+      await pair.connect(router).swapOut(acc1Token0.address, acc1Token1.address, 18, 10, acc1.address); // amountIn == 9.99
+      expect(await acc1Token0.balanceOf(acc1.address)).to.be.eq(9891);
+      expect(await acc1Token1.balanceOf(acc1.address)).to.be.eq(19818);
+    });
+
+    it("should be error if amountOut more than minAmountOut", async () => {
+      await acc1Token0.connect(acc1).approve(pair.address, 10);
+      await expect(pair.connect(router).swapIn(acc1Token0.address, acc1Token1.address, 10, 20, acc1.address)).to.be.revertedWith('amountOut less than minAmountOut');
+    });
+
+    it("should be error if maxAmountIn more than amountIn", async () => {
+      await acc1Token0.connect(acc1).approve(pair.address, 10);
+      await expect(pair.connect(router).swapOut(acc1Token0.address, acc1Token1.address, 20, 10, acc1.address)).to.be.revertedWith('maxAmountIn less than amountIn');
     });
   });
 });

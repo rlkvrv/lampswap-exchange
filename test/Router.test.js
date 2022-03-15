@@ -1,12 +1,7 @@
 const { expect } = require("chai");
-const { BigNumber } = require("ethers");
 const { ethers } = require("hardhat");
 
-const decimals = BigInt(10**18);
-const token0Amount = BigInt(10000n * decimals);
-const token1Amount = BigInt(20000n * decimals);
-
-describe("getTokenPrice", function () {
+describe("Router", function () {
   let acc1;
   let acc2;
   let router;
@@ -14,16 +9,15 @@ describe("getTokenPrice", function () {
   let factory;
   let acc1Token0;
   let acc1Token1;
-  let pair;
 
   beforeEach(async function () {
     [acc1, acc2] = await ethers.getSigners();
 
     acc1Token0 = await (await (await ethers.getContractFactory('LampCoin', acc1))
-      .deploy(token0Amount))
+      .deploy(10000))
       .deployed();
     acc1Token1 = await (await (await ethers.getContractFactory('LampCoin', acc1))
-      .deploy(token1Amount))
+      .deploy(20000))
       .deployed();
 
     const Router = await ethers.getContractFactory('Router', acc1);
@@ -43,22 +37,22 @@ describe("getTokenPrice", function () {
 
     const pairAddress = await registry.getPair(acc1Token0.address, acc1Token1.address)
     const Pair = require("../artifacts/contracts/Pair.sol/Pair.json");
-    pair = new ethers.Contract(pairAddress, Pair.abi, acc1);
-
-    const txToken0 = 100n * decimals;
-    const txToken1 = 200n * decimals;
-
-    await acc1Token0.connect(acc1).approve(pair.address, txToken0);
-    await acc1Token1.connect(acc1).approve(pair.address, txToken1);
-    await pair.connect(acc1).addLiquidity(acc1Token0.address, acc1Token1.address, txToken0, txToken1);
+    const pair = new ethers.Contract(pairAddress, Pair.abi, acc1);
+    await acc1Token0.connect(acc1).approve(pair.address, 1000);
+    await acc1Token1.connect(acc1).approve(pair.address, 2000);
+    await pair.connect(acc1).addLiquidity(acc1Token0.address, acc1Token1.address, 100, 200);
   })
 
-  it("возвращает правильные цены", async function () {
-    const value0 = await pair.getTokenPrice(acc1Token0.address, 1n * decimals)
-    const value1 = await pair.getTokenPrice(acc1Token1.address, 1n * decimals)
-
-    expect((value0 / BigNumber.from(decimals)).toString()).to.be.eq('1.960590157441331');
-    expect((value1 / BigNumber.from(decimals)).toString()).to.be.eq('0.4925618189959699');
+  it("should be deployed", async function () {
+    expect(router.address).to.be.properAddress;
   });
 
+  it("swapIn", async function () {
+    await router.swapIn(acc1Token0.address, acc1Token1.address, 10, 18);
+  });
+
+  // it("setRegistry should set registry address", async function () {
+  //   await factory.setRegistry(registry.address);
+  //   expect(await factory.registry()).to.be.eq(registry.address);
+  // });
 });

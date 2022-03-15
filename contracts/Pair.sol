@@ -85,6 +85,7 @@ contract Pair is ERC20, ReentrancyGuard, Ownable {
         address tokenIn,
         address tokenOut,
         uint256 amountIn,
+        uint256 minAmountOut,
         address recipient
     ) external onlyRouter nonReentrant returns (uint256 amountOut) {
         require(amountIn > 0, "amount too small");
@@ -97,15 +98,31 @@ contract Pair is ERC20, ReentrancyGuard, Ownable {
             "This tokenOut is not found"
         );
         amountOut = this.getTokenPrice(tokenIn, amountIn);
+        require(amountOut >= minAmountOut, "amountOut less than minAmountOut");
+        _swap(tokenIn, amountIn, amountOut, recipient);
     }
 
     function swapOut(
         address tokenIn,
         address tokenOut,
         uint256 amountOut,
+        uint256 maxAmountIn,
         address recipient
     ) external onlyRouter nonReentrant returns (uint256 amountIn) {
-        amountIn = 0;
+        require(amountOut > 0, "amount too small");
+        require(
+            tokenIn == token0 || tokenIn == token1,
+            "This tokenIn is not found"
+        );
+        require(
+            tokenOut == token0 || tokenOut == token1,
+            "This tokenOut is not found"
+        );
+        amountIn =
+            (reserve0 * amountOut * 100) /
+            ((reserve1 - amountOut) * (100 - 1));
+        require(maxAmountIn >= amountIn, "maxAmountIn less than amountIn");
+        _swap(tokenIn, amountIn, amountOut, recipient);
     }
 
     function getTokenPrice(address _token, uint256 _amount)
@@ -122,6 +139,30 @@ contract Pair is ERC20, ReentrancyGuard, Ownable {
             return _getAmount(_amount, reserve0, reserve1);
         }
         return _getAmount(_amount, reserve1, reserve0);
+    }
+
+    function _swap(
+        address _token,
+        uint256 _amountIn,
+        uint256 _amoutOut,
+        address recipient
+    ) private {
+        require(_amountIn > 0, "amount too small");
+        ERC20 _token0 = ERC20(token0);
+        ERC20 _token1 = ERC20(token1);
+        if (_token == token0) {
+            _token0.transferFrom(recipient, address(this), _amountIn);
+            _token1.transfer(recipient, _amoutOut);
+
+            reserve0 = reserve0.add(_amountIn);
+            reserve1 = reserve1.sub(_amoutOut);
+        } else {
+            _token1.transferFrom(recipient, address(this), _amountIn);
+            _token0.transfer(recipient, _amoutOut);
+
+            reserve1 = reserve1.add(_amountIn);
+            reserve0 = reserve0.sub(_amoutOut);
+        }
     }
 
     function _getAmount(
