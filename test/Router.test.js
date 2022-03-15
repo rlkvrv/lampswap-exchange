@@ -9,6 +9,7 @@ describe("Router", function () {
   let factory;
   let acc1Token0;
   let acc1Token1;
+  let fee;
 
   beforeEach(async function () {
     [acc1, acc2] = await ethers.getSigners();
@@ -41,6 +42,10 @@ describe("Router", function () {
     await acc1Token0.connect(acc1).approve(pair.address, 1000);
     await acc1Token1.connect(acc1).approve(pair.address, 2000);
     await pair.connect(acc1).addLiquidity(acc1Token0.address, acc1Token1.address, 100, 200);
+
+    const Fee = await ethers.getContractFactory("Fee", acc1);
+    fee = await (await Fee.deploy(1, 1, 2)).deployed();
+    await pair.setFee(fee.address);
   })
 
   it("should be deployed", async function () {

@@ -7,6 +7,7 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "hardhat/console.sol";
 import "./libraries/SafeMath.sol";
+import "./FeeInterface.sol";
 
 contract Pair is ERC20, ReentrancyGuard, Ownable {
     using SafeMath for uint256;
@@ -14,6 +15,7 @@ contract Pair is ERC20, ReentrancyGuard, Ownable {
     address token0;
     address token1;
     address public router;
+    address public fee;
     uint256 public reserve0;
     uint256 public reserve1;
 
@@ -34,6 +36,10 @@ contract Pair is ERC20, ReentrancyGuard, Ownable {
 
     function setRouter(address _router) external onlyOwner {
         router = _router;
+    }
+
+    function setFee(address _fee) external { // onlyOwner ??
+        fee = _fee;
     }
 
     function addLiquidity(
@@ -118,9 +124,12 @@ contract Pair is ERC20, ReentrancyGuard, Ownable {
             tokenOut == token0 || tokenOut == token1,
             "This tokenOut is not found"
         );
+        FeeInterface _fee = FeeInterface(fee);
+        uint _swapFee = _fee.getSwapFee();
+        uint _feeDecimals = _fee.getFeeDecimals();
         amountIn =
-            (reserve0 * amountOut * 100) /
-            ((reserve1 - amountOut) * (100 - 1));
+            (reserve0 * amountOut * 10**_feeDecimals) /
+            ((reserve1 - amountOut) * (10**_feeDecimals - _swapFee));
         require(maxAmountIn >= amountIn, "maxAmountIn less than amountIn");
         _swap(tokenIn, amountIn, amountOut, recipient);
     }
@@ -169,13 +178,14 @@ contract Pair is ERC20, ReentrancyGuard, Ownable {
         uint256 inputAmount,
         uint256 inputReserve,
         uint256 outputReserve
-    ) private pure returns (uint256) {
+    ) private view returns (uint256) {
         require(inputReserve > 0 && outputReserve > 0, "invalid reserves");
-        uint256 fee = 1;
-        uint256 feeDecimals = 2;
+        FeeInterface _fee = FeeInterface(fee);
+        uint _swapFee = _fee.getSwapFee();
+        uint _feeDecimals = _fee.getFeeDecimals();
         uint256 inputAmountWithFee = inputAmount -
-            (inputAmount * fee) /
-            10**feeDecimals;
+            (inputAmount * _swapFee) /
+            10**_feeDecimals;
         uint256 numerator = outputReserve * inputAmountWithFee;
         uint256 denominator = inputReserve + inputAmountWithFee;
         return numerator / denominator;

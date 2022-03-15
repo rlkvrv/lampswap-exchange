@@ -15,6 +15,7 @@ describe("getTokenPrice", function () {
   let acc1Token0;
   let acc1Token1;
   let pair;
+  let fee;
 
   beforeEach(async function () {
     [acc1, acc2] = await ethers.getSigners();
@@ -35,6 +36,9 @@ describe("getTokenPrice", function () {
     const Registry = await ethers.getContractFactory("Registry", acc1);
     registry = await (await Registry.deploy()).deployed();
 
+    const Fee = await ethers.getContractFactory("Fee", acc1);
+    fee = await (await Fee.deploy(1, 1, 2)).deployed();
+
     await router.setRegistry(registry.address);
     await factory.setRouter(router.address);
     await factory.setRegistry(registry.address);
@@ -45,6 +49,8 @@ describe("getTokenPrice", function () {
     const Pair = require("../artifacts/contracts/Pair.sol/Pair.json");
     pair = new ethers.Contract(pairAddress, Pair.abi, acc1);
 
+    await pair.setFee(fee.address);
+
     const txToken0 = 100n * decimals;
     const txToken1 = 200n * decimals;
 
@@ -53,7 +59,7 @@ describe("getTokenPrice", function () {
     await pair.connect(acc1).addLiquidity(acc1Token0.address, acc1Token1.address, txToken0, txToken1);
   })
 
-  it("возвращает правильные цены", async function () {
+  it("should return correct prices", async function () {
     const value0 = await pair.getTokenPrice(acc1Token0.address, 1n * decimals)
     const value1 = await pair.getTokenPrice(acc1Token1.address, 1n * decimals)
 

@@ -9,6 +9,7 @@ describe("Pair", function () {
   let acc1Token1;
   let acc2Token0;
   let acc2Token1;
+  let fee;
 
   beforeEach(async function () {
     [acc1, acc2, router] = await ethers.getSigners();
@@ -142,6 +143,10 @@ describe("Pair", function () {
       await acc1Token0.connect(acc1).approve(pair.address, 100);
       await acc1Token1.connect(acc1).approve(pair.address, 200);
 
+      const Fee = await ethers.getContractFactory("Fee", acc1);
+      fee = await (await Fee.deploy(1, 1, 2)).deployed();
+
+      await pair.setFee(fee.address);
       await pair.connect(acc1).addLiquidity(acc1Token0.address, acc1Token1.address, 100, 200);
     });
 
