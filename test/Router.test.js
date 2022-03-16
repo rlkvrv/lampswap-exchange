@@ -33,7 +33,7 @@ describe("Router", function () {
     await router.setRegistry(registry.address);
     await factory.setRouter(router.address);
     await factory.setRegistry(registry.address);
-    await registry.setFabric(factory.address);
+    await registry.setFactory(factory.address);
     await factory.createPair(acc1Token0.address, acc1Token1.address);
 
     const pairAddress = await registry.getPair(acc1Token0.address, acc1Token1.address)

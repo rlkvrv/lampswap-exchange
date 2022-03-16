@@ -1,5 +1,5 @@
 const { ethers } = require("hardhat");
-const pairAddress = '0x553BED26A78b94862e53945941e4ad6E4F2497da';
+const pairAddress = '0xE91bfd2AfA045Ab2f47BEf565FC1deb7511D1AC6';
 
 // Эта транзакция создает пул ликвидности
 // если вызвать несколько раз, то можно проверить

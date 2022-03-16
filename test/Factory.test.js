@@ -16,7 +16,7 @@ describe("Factory", function () {
     const Registry = await ethers.getContractFactory("Registry", acc1);
     registry = await Registry.deploy();
     await registry.deployed();
-    await registry.setFabric(factory.address);
+    await registry.setFactory(factory.address);
   })
   
   it("should be deployed", async function () {
@@ -33,8 +33,12 @@ describe("Factory", function () {
     expect(await factory.registry()).to.be.eq(registry.address);
   });
 
-  // it("createPair", async function () {
-  //   await factory.setRegistry(registry.address);
-  //   await factory.createPair(token0.address, token1.address);
-  // });
+  it("createPair should create pair and set pair in registry", async function () {
+    await factory.setRegistry(registry.address);
+    await factory.createPair(token0.address, token1.address);
+
+    const pairAddress = await registry.getPair(token0.address, token1.address);
+    expect(await registry.allPairs(0)).to.eq(pairAddress);
+    expect(await registry.allPairsLength()).to.eq(1);
+  });
 });

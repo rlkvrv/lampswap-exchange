@@ -37,7 +37,7 @@ async function main() {
   await factory.setRouter(router.address);
   await factory.setRegistry(registry.address);
   //  - устанавливаем на регистри адрес фабрики
-  await registry.setFabric(factory.address);
+  await registry.setFactory(factory.address);
 
   //  Создаем пару через фабрику
   await factory.createPair(token0.address, token1.address);
