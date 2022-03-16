@@ -38,7 +38,7 @@ contract Pair is ERC20, ReentrancyGuard, Ownable {
         router = _router;
     }
 
-    function setFee(address _fee) external { // onlyOwner ??
+    function setFee(address _fee) external onlyOwner {
         fee = _fee;
     }
 

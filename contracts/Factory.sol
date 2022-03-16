@@ -20,7 +20,7 @@ contract Factory is Ownable {
     function createPair(address token0, address token1) external {
         Pair pair = new Pair(token0, token1, router);
         RegistryInterface _registry = RegistryInterface(registry);
-        // pair.transferOwnership(msg.sender);
+        pair.transferOwnership(msg.sender);
         _registry.setPair(token0, token1, address(pair));
     }
 }
