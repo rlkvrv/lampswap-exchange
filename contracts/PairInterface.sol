@@ -5,6 +5,8 @@ pragma solidity ^0.8.0;
 interface PairInterface {
     function setRouter(address _router) external;
 
+    function setFee(address _fee) external;
+
     function addLiquidity(
         address token0,
         address token1,
@@ -29,4 +31,9 @@ interface PairInterface {
         uint256 maxAmountIn,
         address recipient
     ) external returns (uint256 amountIn);
+
+    function getTokenPrice(address _token, uint256 _amount)
+        external
+        view
+        returns (uint256);
 }

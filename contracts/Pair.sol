@@ -7,9 +7,10 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "hardhat/console.sol";
 import "./libraries/SafeMath.sol";
+import "./PairInterface.sol";
 import "./FeeInterface.sol";
 
-contract Pair is ERC20, ReentrancyGuard, Ownable {
+contract Pair is PairInterface, ERC20, ReentrancyGuard, Ownable {
     using SafeMath for uint256;
 
     address token0;
@@ -34,11 +35,23 @@ contract Pair is ERC20, ReentrancyGuard, Ownable {
         _;
     }
 
-    function setRouter(address _router) external onlyOwner {
+    modifier onlyToken(address tokenIn, address tokenOut) {
+        require(
+            tokenIn == token0 || tokenIn == token1,
+            "This tokenIn is not found"
+        );
+        require(
+            tokenOut == token0 || tokenOut == token1,
+            "This tokenOut is not found"
+        );
+        _;
+    }
+
+    function setRouter(address _router) external override onlyOwner {
         router = _router;
     }
 
-    function setFee(address _fee) external onlyOwner {
+    function setFee(address _fee) external override onlyOwner {
         fee = _fee;
     }
 
@@ -47,7 +60,7 @@ contract Pair is ERC20, ReentrancyGuard, Ownable {
         address coin1,
         uint256 amount0,
         uint256 amount1
-    ) external nonReentrant {
+    ) external override nonReentrant {
         ERC20 _token0 = ERC20(coin0);
         ERC20 _token1 = ERC20(coin1);
         uint256 liquidity;
@@ -73,7 +86,7 @@ contract Pair is ERC20, ReentrancyGuard, Ownable {
         }
     }
 
-    function removeLiquidity(uint256 _amountLP) external nonReentrant {
+    function removeLiquidity(uint256 _amountLP) external override nonReentrant {
         require(_amountLP > 0, "Invalid amount");
         ERC20 _token0 = ERC20(token0);
         ERC20 _token1 = ERC20(token1);
@@ -93,17 +106,17 @@ contract Pair is ERC20, ReentrancyGuard, Ownable {
         uint256 amountIn,
         uint256 minAmountOut,
         address recipient
-    ) external onlyRouter nonReentrant returns (uint256 amountOut) {
+    )
+        external
+        override
+        onlyToken(tokenIn, tokenOut)
+        onlyRouter
+        nonReentrant
+        returns (uint256 amountOut)
+    {
         require(amountIn > 0, "amount too small");
-        require(
-            tokenIn == token0 || tokenIn == token1,
-            "This tokenIn is not found"
-        );
-        require(
-            tokenOut == token0 || tokenOut == token1,
-            "This tokenOut is not found"
-        );
         amountOut = this.getTokenPrice(tokenIn, amountIn);
+
         require(amountOut >= minAmountOut, "amountOut less than minAmountOut");
         _swap(tokenIn, amountIn, amountOut, recipient);
     }
@@ -114,22 +127,29 @@ contract Pair is ERC20, ReentrancyGuard, Ownable {
         uint256 amountOut,
         uint256 maxAmountIn,
         address recipient
-    ) external onlyRouter nonReentrant returns (uint256 amountIn) {
+    )
+        external
+        override
+        onlyToken(tokenIn, tokenOut)
+        onlyRouter
+        nonReentrant
+        returns (uint256 amountIn)
+    {
         require(amountOut > 0, "amount too small");
-        require(
-            tokenIn == token0 || tokenIn == token1,
-            "This tokenIn is not found"
-        );
-        require(
-            tokenOut == token0 || tokenOut == token1,
-            "This tokenOut is not found"
-        );
         FeeInterface _fee = FeeInterface(fee);
-        uint _swapFee = _fee.getSwapFee();
-        uint _feeDecimals = _fee.getFeeDecimals();
-        amountIn =
-            (reserve0 * amountOut * 10**_feeDecimals) /
-            ((reserve1 - amountOut) * (10**_feeDecimals - _swapFee));
+        uint256 _swapFee = _fee.getSwapFee();
+        uint256 _feeDecimals = _fee.getFeeDecimals();
+
+        if (tokenIn == token0) {
+            amountIn =
+                (reserve0 * amountOut * 10**_feeDecimals) /
+                ((reserve1 - amountOut) * (10**_feeDecimals - _swapFee));
+        } else {
+            amountIn =
+                (reserve1 * amountOut * 10**_feeDecimals) /
+                ((reserve0 - amountOut) * (10**_feeDecimals - _swapFee));
+        }
+
         require(maxAmountIn >= amountIn, "maxAmountIn less than amountIn");
         _swap(tokenIn, amountIn, amountOut, recipient);
     }
@@ -137,6 +157,7 @@ contract Pair is ERC20, ReentrancyGuard, Ownable {
     function getTokenPrice(address _token, uint256 _amount)
         external
         view
+        override
         returns (uint256)
     {
         require(_amount > 0, "amount too small");
@@ -148,6 +169,23 @@ contract Pair is ERC20, ReentrancyGuard, Ownable {
             return _getAmount(_amount, reserve0, reserve1);
         }
         return _getAmount(_amount, reserve1, reserve0);
+    }
+
+    function _getAmount(
+        uint256 inputAmount,
+        uint256 inputReserve,
+        uint256 outputReserve
+    ) private view returns (uint256) {
+        require(inputReserve > 0 && outputReserve > 0, "invalid reserves");
+        FeeInterface _fee = FeeInterface(fee);
+        uint256 _swapFee = _fee.getSwapFee();
+        uint256 _feeDecimals = _fee.getFeeDecimals();
+        uint256 inputAmountWithFee = inputAmount -
+            (inputAmount * _swapFee) /
+            10**_feeDecimals;
+        uint256 numerator = outputReserve * inputAmountWithFee;
+        uint256 denominator = inputReserve + inputAmountWithFee;
+        return numerator / denominator;
     }
 
     function _swap(
@@ -172,22 +210,5 @@ contract Pair is ERC20, ReentrancyGuard, Ownable {
             reserve1 = reserve1.add(_amountIn);
             reserve0 = reserve0.sub(_amoutOut);
         }
-    }
-
-    function _getAmount(
-        uint256 inputAmount,
-        uint256 inputReserve,
-        uint256 outputReserve
-    ) private view returns (uint256) {
-        require(inputReserve > 0 && outputReserve > 0, "invalid reserves");
-        FeeInterface _fee = FeeInterface(fee);
-        uint _swapFee = _fee.getSwapFee();
-        uint _feeDecimals = _fee.getFeeDecimals();
-        uint256 inputAmountWithFee = inputAmount -
-            (inputAmount * _swapFee) /
-            10**_feeDecimals;
-        uint256 numerator = outputReserve * inputAmountWithFee;
-        uint256 denominator = inputReserve + inputAmountWithFee;
-        return numerator / denominator;
     }
 }
