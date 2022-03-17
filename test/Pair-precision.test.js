@@ -67,4 +67,12 @@ describe("getTokenPrice", function () {
     expect((value1 / BigNumber.from(decimals)).toString()).to.be.eq('0.4925618189959699');
   });
 
+  it("should return correct prices with zero fee", async function () {
+    await fee.setFeeParams(0, 0, 0);
+    const value0 = await pair.getTokenPrice(acc1Token0.address, 1n * decimals)
+    const value1 = await pair.getTokenPrice(acc1Token1.address, 1n * decimals)
+
+    expect((value0 / BigNumber.from(decimals)).toString()).to.be.eq('1.9801980198019802');
+    expect((value1 / BigNumber.from(decimals)).toString()).to.be.eq('0.4975124378109453');
+  });
 });
