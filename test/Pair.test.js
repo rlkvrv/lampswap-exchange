@@ -12,7 +12,7 @@ describe("Pair", function () {
   let fee;
 
   beforeEach(async function () {
-    [acc1, acc2, router] = await ethers.getSigners();
+    [acc1, acc2, router, fee] = await ethers.getSigners();
     acc1Token0 = await (await (await ethers.getContractFactory('LampCoin', acc1))
       .deploy(10000))
       .deployed();
@@ -22,7 +22,7 @@ describe("Pair", function () {
 
     const Pair = await ethers.getContractFactory("Pair", acc1);
     pair = await (
-      await Pair.deploy(acc1Token0.address, acc1Token1.address, router.address)
+      await Pair.deploy(acc1Token0.address, acc1Token1.address, router.address, fee.address)
     ).deployed();
   })
 

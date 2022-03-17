@@ -23,11 +23,13 @@ contract Pair is PairInterface, ERC20, ReentrancyGuard, Ownable {
     constructor(
         address _token0,
         address _token1,
-        address _router
+        address _router,
+        address _fee
     ) ERC20("LPToken", "LPT") {
         token0 = _token0;
         token1 = _token1;
         router = _router;
+        fee = _fee;
     }
 
     modifier onlyRouter() {

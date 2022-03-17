@@ -6,6 +6,7 @@ describe("Factory", function () {
   let acc2;
   let factory;
   let registry;
+  let fee;
 
   beforeEach(async function () {
     [acc1, acc2, token0, token1, router] = await ethers.getSigners();
@@ -17,8 +18,11 @@ describe("Factory", function () {
     registry = await Registry.deploy();
     await registry.deployed();
     await registry.setFactory(factory.address);
+
+    const Fee = await ethers.getContractFactory("Fee", acc1);
+    fee = await (await Fee.deploy(1, 1, 2)).deployed();
   })
-  
+
   it("should be deployed", async function () {
     expect(factory.address).to.be.properAddress;
   });
@@ -31,6 +35,11 @@ describe("Factory", function () {
   it("setRegistry should set registry address", async function () {
     await factory.setRegistry(registry.address);
     expect(await factory.registry()).to.be.eq(registry.address);
+  });
+
+  it("setFee should set fee address", async function () {
+    await factory.setFee(fee.address);
+    expect(await factory.fee()).to.be.eq(fee.address);
   });
 
   it("createPair should create pair and set pair in registry", async function () {

@@ -42,14 +42,13 @@ describe("getTokenPrice", function () {
     await router.setRegistry(registry.address);
     await factory.setRouter(router.address);
     await factory.setRegistry(registry.address);
+    await factory.setFee(fee.address);
     await registry.setFactory(factory.address);
     await factory.createPair(acc1Token0.address, acc1Token1.address);
 
     const pairAddress = await registry.getPair(acc1Token0.address, acc1Token1.address)
     const Pair = require("../artifacts/contracts/Pair.sol/Pair.json");
     pair = new ethers.Contract(pairAddress, Pair.abi, acc1);
-
-    await pair.setFee(fee.address);
 
     const txToken0 = 100n * decimals;
     const txToken1 = 200n * decimals;

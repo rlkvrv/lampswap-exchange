@@ -30,9 +30,13 @@ describe("Router", function () {
     const Registry = await ethers.getContractFactory("Registry", acc1);
     registry = await (await Registry.deploy()).deployed();
 
+    const Fee = await ethers.getContractFactory("Fee", acc1);
+    fee = await (await Fee.deploy(1, 1, 2)).deployed();
+
     await router.setRegistry(registry.address);
     await factory.setRouter(router.address);
     await factory.setRegistry(registry.address);
+    await factory.setFee(fee.address);
     await registry.setFactory(factory.address);
     await factory.createPair(acc1Token0.address, acc1Token1.address);
 
@@ -42,10 +46,6 @@ describe("Router", function () {
     await acc1Token0.connect(acc1).approve(pair.address, 1000);
     await acc1Token1.connect(acc1).approve(pair.address, 2000);
     await pair.connect(acc1).addLiquidity(acc1Token0.address, acc1Token1.address, 100, 200);
-
-    const Fee = await ethers.getContractFactory("Fee", acc1);
-    fee = await (await Fee.deploy(1, 1, 2)).deployed();
-    await pair.setFee(fee.address);
   })
 
   it("should be deployed", async function () {
@@ -56,8 +56,7 @@ describe("Router", function () {
     await router.swapIn(acc1Token0.address, acc1Token1.address, 10, 18);
   });
 
-  // it("setRegistry should set registry address", async function () {
-  //   await factory.setRegistry(registry.address);
-  //   expect(await factory.registry()).to.be.eq(registry.address);
-  // });
+  it("swapOut", async function () {
+    await router.swapOut(acc1Token0.address, acc1Token1.address, 10, 18);
+  });
 });
