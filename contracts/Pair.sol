@@ -89,6 +89,7 @@ contract Pair is PairInterface, ERC20, ReentrancyGuard, Ownable {
         external
         override
         nonReentrant
+        onlyRouter
     {
         require(_amountLP > 0, "Invalid amount");
         ERC20 _token0 = ERC20(token0);

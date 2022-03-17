@@ -51,4 +51,16 @@ describe("Pair", function () {
       pair.connect(acc1).swapIn(acc1Token0.address, acc1Token1.address, 10)
     ).to.be.revertedWith('Ownable: caller is not the router');
   });
+
+  it("only router can make a addLiquidity transaction", async () => {
+    await expect(
+      pair.connect(acc1).addLiquidity(acc1.address, 100, 200)
+    ).to.be.revertedWith('Ownable: caller is not the router');
+  });
+
+  it("only router can make a removeLiquidity transaction", async () => {
+    await expect(
+      pair.connect(acc1).removeLiquidity(300, acc1.address)
+    ).to.be.revertedWith('Ownable: caller is not the router');
+  });
 });
