@@ -45,7 +45,7 @@ describe("Router", function () {
     const pair = new ethers.Contract(pairAddress, Pair.abi, acc1);
     await acc1Token0.connect(acc1).approve(pair.address, 1000);
     await acc1Token1.connect(acc1).approve(pair.address, 2000);
-    await pair.connect(acc1).addLiquidity(acc1Token0.address, acc1Token1.address, 100, 200);
+    await router.addLiquidity(acc1Token0.address, acc1Token1.address, 100, 200);
   })
 
   it("should be deployed", async function () {

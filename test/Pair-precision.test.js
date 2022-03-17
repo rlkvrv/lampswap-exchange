@@ -55,7 +55,7 @@ describe("getTokenPrice", function () {
 
     await acc1Token0.connect(acc1).approve(pair.address, txToken0);
     await acc1Token1.connect(acc1).approve(pair.address, txToken1);
-    await pair.connect(acc1).addLiquidity(acc1Token0.address, acc1Token1.address, txToken0, txToken1);
+    await router.addLiquidity(acc1Token0.address, acc1Token1.address, txToken0, txToken1);
   })
 
   it("should return correct prices", async function () {

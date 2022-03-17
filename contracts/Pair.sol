@@ -61,16 +61,17 @@ contract Pair is PairInterface, ERC20, ReentrancyGuard, Ownable {
         address coin0,
         address coin1,
         uint256 amount0,
-        uint256 amount1
-    ) external override nonReentrant {
+        uint256 amount1,
+        address recipient
+    ) external override nonReentrant onlyRouter {
         ERC20 _token0 = ERC20(coin0);
         ERC20 _token1 = ERC20(coin1);
         uint256 liquidity;
         if (reserve0 == 0) {
-            _token0.transferFrom(msg.sender, address(this), amount0);
-            _token1.transferFrom(msg.sender, address(this), amount1);
+            _token0.transferFrom(recipient, address(this), amount0);
+            _token1.transferFrom(recipient, address(this), amount1);
             liquidity = amount0.add(amount1);
-            _mint(msg.sender, liquidity);
+            _mint(recipient, liquidity);
             reserve0 = reserve0.add(amount0);
             reserve1 = reserve1.add(amount1);
         } else {
@@ -78,26 +79,26 @@ contract Pair is PairInterface, ERC20, ReentrancyGuard, Ownable {
             uint256 token1Amount = (amount0.mul(reserve1)).div(reserve0);
             require(amount0 >= token0Amount, "Insufficient token0 amount");
             require(amount1 >= token1Amount, "Insufficient token1 amount");
-            _token0.transferFrom(msg.sender, address(this), amount0);
-            _token1.transferFrom(msg.sender, address(this), amount1);
+            _token0.transferFrom(recipient, address(this), amount0);
+            _token1.transferFrom(recipient, address(this), amount1);
             uint256 _totalSupply = this.totalSupply();
             liquidity = (_totalSupply.mul(amount0)).div(reserve0);
-            _mint(msg.sender, liquidity);
+            _mint(recipient, liquidity);
             reserve0 = reserve0.add(amount0);
             reserve1 = reserve1.add(amount1);
         }
     }
 
-    function removeLiquidity(uint256 _amountLP) external override nonReentrant {
+    function removeLiquidity(uint256 _amountLP, address recipient) external override nonReentrant {
         require(_amountLP > 0, "Invalid amount");
         ERC20 _token0 = ERC20(token0);
         ERC20 _token1 = ERC20(token1);
         uint256 _totalSupply = this.totalSupply();
         uint256 token0Amount = (reserve0.mul(_amountLP)).div(_totalSupply);
         uint256 token1Amount = (reserve1.mul(_amountLP)).div(_totalSupply);
-        _burn(msg.sender, _amountLP);
-        _token0.transfer(msg.sender, token0Amount);
-        _token1.transfer(msg.sender, token1Amount);
+        _burn(recipient, _amountLP);
+        _token0.transfer(recipient, token0Amount);
+        _token1.transfer(recipient, token1Amount);
         reserve0 = reserve0.sub(token0Amount);
         reserve1 = reserve1.sub(token1Amount);
     }

@@ -55,24 +55,24 @@ describe("Pair", function () {
     });
 
     it("token contracts balance in acc1 should decrease", async function () {
-      await pair.connect(acc1).addLiquidity(acc1Token0.address, acc1Token1.address, 100, 200);
+      await pair.connect(router).addLiquidity(acc1Token0.address, acc1Token1.address, 100, 200, acc1.address);
       expect(await acc1Token0.balanceOf(acc1.address)).to.be.eq(9900);
       expect(await acc1Token1.balanceOf(acc1.address)).to.be.eq(19800);
     });
 
     it("pair balance should increase", async function () {
-      await pair.connect(acc1).addLiquidity(acc1Token0.address, acc1Token1.address, 100, 200);
+      await pair.connect(router).addLiquidity(acc1Token0.address, acc1Token1.address, 100, 200, acc1.address);
       expect(await acc1Token0.balanceOf(pair.address)).to.be.eq(100);
       expect(await acc1Token1.balanceOf(pair.address)).to.be.eq(200);
     });
 
     it("acc1 LPToken balance should increase", async function () {
-      await pair.connect(acc1).addLiquidity(acc1Token0.address, acc1Token1.address, 100, 200);
+      await pair.connect(router).addLiquidity(acc1Token0.address, acc1Token1.address, 100, 200, acc1.address);
       expect(await pair.balanceOf(acc1.address)).to.be.eq(300);
     });
 
     it("pair totalSupply should increase", async function () {
-      await pair.connect(acc1).addLiquidity(acc1Token0.address, acc1Token1.address, 100, 200);
+      await pair.connect(router).addLiquidity(acc1Token0.address, acc1Token1.address, 100, 200, acc1.address);
       expect(await pair.totalSupply()).to.be.eq(300);
     });
   });
@@ -91,34 +91,34 @@ describe("Pair", function () {
       await acc2Token0.connect(acc2).approve(pair.address, 200);
       await acc2Token1.connect(acc2).approve(pair.address, 400);
 
-      await pair.connect(acc1).addLiquidity(acc1Token0.address, acc1Token1.address, 100, 200);
+      await pair.connect(router).addLiquidity(acc1Token0.address, acc1Token1.address, 100, 200, acc1.address);
     });
 
     it("token contracts balance in acc2 should decrease", async function () {
-      await pair.connect(acc2).addLiquidity(acc2Token0.address, acc2Token1.address, 200, 400);
+      await pair.connect(router).addLiquidity(acc2Token0.address, acc2Token1.address, 200, 400, acc2.address);
       expect(await acc2Token0.balanceOf(acc2.address)).to.be.eq(29800);
       expect(await acc2Token1.balanceOf(acc2.address)).to.be.eq(39600);
     });
 
     it("pair balance acc2 should increase", async function () {
-      await pair.connect(acc2).addLiquidity(acc2Token0.address, acc2Token1.address, 200, 400);
+      await pair.connect(router).addLiquidity(acc2Token0.address, acc2Token1.address, 200, 400, acc2.address);
       expect(await acc2Token0.balanceOf(pair.address)).to.be.eq(200);
       expect(await acc2Token1.balanceOf(pair.address)).to.be.eq(400);
     });
 
     it("acc2 LPToken balance should increase", async function () {
-      await pair.connect(acc2).addLiquidity(acc2Token0.address, acc2Token1.address, 200, 400);
+      await pair.connect(router).addLiquidity(acc2Token0.address, acc2Token1.address, 200, 400, acc2.address);
       expect(await pair.balanceOf(acc2.address)).to.be.eq(600);
     });
 
     it("pair totalSupply should increase", async function () {
-      await pair.connect(acc2).addLiquidity(acc2Token0.address, acc2Token1.address, 200, 400);
+      await pair.connect(router).addLiquidity(acc2Token0.address, acc2Token1.address, 200, 400, acc2.address);
       expect(await pair.totalSupply()).to.be.eq(900);
     });
 
     it("should return error message when added incorrect liquidity", async function () {
-      await expect(pair.connect(acc2).addLiquidity(acc2Token0.address, acc2Token1.address, 199, 400)).to.be.revertedWith('Insufficient token0 amount');
-      await expect(pair.connect(acc2).addLiquidity(acc2Token0.address, acc2Token1.address, 200, 399)).to.be.revertedWith('Insufficient token1 amount');
+      await expect(pair.connect(router).addLiquidity(acc2Token0.address, acc2Token1.address, 199, 400, acc2.address)).to.be.revertedWith('Insufficient token0 amount');
+      await expect(pair.connect(router).addLiquidity(acc2Token0.address, acc2Token1.address, 200, 399, acc2.address)).to.be.revertedWith('Insufficient token1 amount');
     });
   });
 
@@ -128,11 +128,11 @@ describe("Pair", function () {
       await acc1Token0.connect(acc1).approve(pair.address, 100);
       await acc1Token1.connect(acc1).approve(pair.address, 200);
 
-      await pair.connect(acc1).addLiquidity(acc1Token0.address, acc1Token1.address, 100, 200);
+      await pair.connect(router).addLiquidity(acc1Token0.address, acc1Token1.address, 100, 200, acc1.address);
     });
 
     it("should be removed liquidity acc1", async function () {
-      await pair.connect(acc1).removeLiquidity(300);
+      await pair.connect(router).removeLiquidity(300, acc1.address);
       expect(await acc1Token0.balanceOf(acc1.address)).to.be.eq(10000);
       expect(await acc1Token1.balanceOf(acc1.address)).to.be.eq(20000);
     });
@@ -147,7 +147,7 @@ describe("Pair", function () {
       fee = await (await Fee.deploy(1, 1, 2)).deployed();
 
       await pair.setFee(fee.address);
-      await pair.connect(acc1).addLiquidity(acc1Token0.address, acc1Token1.address, 100, 200);
+      await pair.connect(router).addLiquidity(acc1Token0.address, acc1Token1.address, 100, 200, acc1.address);
     });
 
 

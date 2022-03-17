@@ -11,10 +11,11 @@ interface PairInterface {
         address token0,
         address token1,
         uint256 amount0,
-        uint256 amount1
+        uint256 amount1,
+        address recipient
     ) external;
 
-    function removeLiquidity(uint256 lpAmount) external;
+    function removeLiquidity(uint256 lpAmount, address recipient) external;
 
     function swapIn(
         address tokenIn,
