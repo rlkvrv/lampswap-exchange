@@ -1,58 +1,62 @@
+const { BigNumber } = require("ethers");
 const { ethers } = require("hardhat");
-const pairAddress = '0xE91bfd2AfA045Ab2f47BEf565FC1deb7511D1AC6';
+
+const DECIMALS = BigInt(10 ** 18);
+
+const routerAddress = '0x5FbDB2315678afecb367f032d93F642f64180aa3'
+const registryAddress = '0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0'
+const token0Address = '0x8464135c8F25Da09e49BC8782676a84730C318bC'
+const token1Address = '0x71C95911E9a5D330f4D621842EC243EE1343292e'
 
 // Эта транзакция создает пул ликвидности
 // если вызвать несколько раз, то можно проверить
 // как пополняется депозит и минтятся LP токены
 
 async function main() {
-  const [signer] = await ethers.getSigners();
-  // для взаимодействия с контрактом пары получаем его abi
+  const [signer, signer2] = await ethers.getSigners();
+  // для взаимодействия с контрактом пары получаем abi
+  const Registry = require("../artifacts/contracts/Registry.sol/Registry.json");
+  const registry = new ethers.Contract(registryAddress, Registry.abi, signer);
+
+  const pairAddress = await registry.getPair(token0Address, token1Address);
   const Pair = require("../artifacts/contracts/Pair.sol/Pair.json");
-  const pairContract = new ethers.Contract(pairAddress, Pair.abi, signer);
+  const pair = new ethers.Contract(pairAddress, Pair.abi, signer);
 
-  // получаем адреса контрактов token0 и token1 для взаимодействия с ними
-  // но уже из контракта пары, потому что токены могли поменяться местами
-  const token0TrueAddress = await pairContract.token0();
-  const token1TrueAddress = await pairContract.token1();
+  const Router = require("../artifacts/contracts/Router.sol/Router.json");
+  const router = new ethers.Contract(routerAddress, Router.abi, signer);
 
-  // Получаем нужный abi
-  const Token = require("../artifacts/contracts/LampCoin.sol/LampCoin.json");
+  const Token = require("../artifacts/contracts/LampCoin.sol/LampCoin.json")
+  const token0 = new ethers.Contract(token0Address, Token.abi, signer2);
+  const token1 = new ethers.Contract(token1Address, Token.abi, signer2);
 
-  // подключаемся к этим контрактам
-  const token0Contract = new ethers.Contract(token0TrueAddress, Token.abi, signer);
-  const token1Contract = new ethers.Contract(token1TrueAddress, Token.abi, signer);
+  await token0.approve(router.address, 100n * DECIMALS);
+  await token1.approve(router.address, 200n * DECIMALS);
 
-  // даем разрешение на списание токенов контракту пары
-  // в качестве депозита
-  console.group('\n TRANSACTION APPROVED');
-  await token0Contract.approve(pairAddress, 100);
-  await token1Contract.approve(pairAddress, 200);
-
-  // проверяем, что разрешение получено и пара 1 может списать с нас 
+  // проверяем, что разрешение получено и роутер может списать с signer2 
   // 100 token0 и 200 token1
-  console.log('\nALLOWANCE for token0: ', await token0Contract.allowance(signer.address, pairAddress));
-  console.log('ALLOWANCE for token1: ', await token1Contract.allowance(signer.address, pairAddress));
-  console.groupEnd();
+  // console.log('ALLOWANCE for token0: ', await token0.allowance(signer2.address, router.address));
+  // console.log('ALLOWANCE for token1: ', await token1.allowance(signer2.address, router.address));
 
-  // списываем у пользователя от имени Pair на контракт Pair
+  console.log('\nbalance wallet before: ', BigNumber.form(await token0.balanceOf(signer2.address)));
+  console.log('balance wallet before: ', await token1.balanceOf(signer2.address));
+  
+  // списываем у пользователя от имени signer2 на контракт Pair
   // 100 token0 и 200 token1
-  // то есть создаем депозит (формируем ликвидность)
-  console.group('\n TRANSACTION 1: CREATE DEPOSIT')
-  await pairContract.createDeposit(100, 200);
+  // то есть формируем ликвидность
+  console.group('\n TRANSACTION 1: ADD LIQUIDITY')
+  await router.connect(signer2).addLiquidity(token0.address, token1.address, 100n * DECIMALS, 200n * DECIMALS);
 
   // Делаем проверку, что средства поступили на баланс Pair
-  console.log('\nBALANCE Pair token0: ', await token0Contract.balanceOf(pairAddress));
-  console.log('BALANCE Pair token1: ', await token1Contract.balanceOf(pairAddress));
+  console.log('\nBALANCE Pair token0: ', await token0.balanceOf(pairAddress));
+  console.log('BALANCE Pair token1: ', await token1.balanceOf(pairAddress));
   // Делаем проверку, что средства списались с кошелька
-  console.log('\nBALANCE myWallet token0: ', await token0Contract.balanceOf(signer.address));
-  console.log('BALANCE myWallet1 token1: ', await token1Contract.balanceOf(signer.address));
+  console.log('\nBALANCE myWallet token0: ', await token0.balanceOf(signer2.address));
+  console.log('BALANCE myWallet1 token1: ', await token1.balanceOf(signer2.address));
 
   // проверяем резервы Pair
-  console.log('\n RESERVES: ', await pairContract.getReserves());
-  console.log('\n Total supply: ', await pairContract.totalSupply());
-  console.log('\nBALANCE myWallet LP: ', await pairContract.balanceOf(signer.address));
-  console.groupEnd();
+  // console.log('\n RESERVES: ', await pairContract.getReserves());
+  console.log('\n Total supply: ', await pair.totalSupply());
+  console.log('\nBALANCE myWallet LP: ', await pair.balanceOf(signer2.address));
 }
 
 main()

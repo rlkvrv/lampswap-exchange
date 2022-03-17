@@ -20,6 +20,7 @@ async function main() {
 
   const Router = await ethers.getContractFactory('Router', acc1);
   const router = await (await Router.deploy()).deployed();
+  console.log('Router contract address: ', router.address);
 
   const Factory = await ethers.getContractFactory('Factory', acc1);
   const factory = await (await Factory.deploy()).deployed();
@@ -33,24 +34,21 @@ async function main() {
   //Шаг второй:
   //  - устанавливаем на роутере адрес регистри
   await router.setRegistry(registry.address);
-  //  - устанавливаем на фабрике адреса регистри и роутера
+  //  - устанавливаем на фабрике адреса регистри, роутера и контракта комиссий
   await factory.setRouter(router.address);
   await factory.setRegistry(registry.address);
+  await factory.setFee(fee.address);
   //  - устанавливаем на регистри адрес фабрики
   await registry.setFactory(factory.address);
 
   //  Создаем пару через фабрику
   await factory.createPair(token0.address, token1.address);
 
-  // получаем адрес контракта Pair
-  const pairAddress = await registry.getPair(token0.address, token1.address)
-  console.log('Pair contract address: ', pairAddress);
+  // получаем адрес контрактов Registry и токенов
+  console.log('Registry contract address: ', registry.address);
+  console.log('Token0 contract address: ', token0.address);
+  console.log('Token1 contract address: ', token1.address);
 
-  // устанавливаем на паре адреса роутера и физов
-  const Pair = require("../artifacts/contracts/Pair.sol/Pair.json");
-  const pair = new ethers.Contract(pairAddress, Pair.abi, acc1);
-  await pair.setRouter(router.address);
-  await pair.setFee(fee.address);
 
   // Проверяем баланс токенов на acc1
   console.log('\nstart BALANCE myWallet token0: ', await token0.balanceOf(acc2.address));
