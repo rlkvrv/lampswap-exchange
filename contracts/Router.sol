@@ -1,13 +1,17 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "hardhat/console.sol";
+import "./libraries/SafeMath.sol";
 import "./RegistryInterface.sol";
 import "./PairInterface.sol";
 
 contract Router is ReentrancyGuard, Ownable {
+    using SafeMath for uint256;
+
     address public registry;
 
     function setRegistry(address _registry) external onlyOwner {
@@ -23,7 +27,24 @@ contract Router is ReentrancyGuard, Ownable {
         RegistryInterface Registry = RegistryInterface(registry);
         address pair = Registry.getPair(token0, token1);
         PairInterface Pair = PairInterface(pair);
-        Pair.addLiquidity(token0, token1, amount0, amount1, msg.sender);
+
+        uint256 _reserve0 = Pair.getReserve0();
+        uint256 _reserve1 = Pair.getReserve1();
+        ERC20 _token0 = ERC20(token0);
+        ERC20 _token1 = ERC20(token1);
+        if (_reserve0 == 0) {
+            _token0.transferFrom(msg.sender, address(pair), amount0);
+            _token1.transferFrom(msg.sender, address(pair), amount1);
+            Pair.addLiquidity(msg.sender, amount0, amount1);
+        } else {
+            uint256 token0Amount = (amount1.mul(_reserve0)).div(_reserve1);
+            uint256 token1Amount = (amount0.mul(_reserve1)).div(_reserve0);
+            require(amount0 >= token0Amount, "Insufficient token0 amount");
+            require(amount1 >= token1Amount, "Insufficient token1 amount");
+            _token0.transferFrom(msg.sender, address(pair), amount0);
+            _token1.transferFrom(msg.sender, address(pair), amount1);
+            Pair.addLiquidity(msg.sender, amount0, amount1);
+        }
     }
 
     function removeLiquidity(
@@ -46,16 +67,13 @@ contract Router is ReentrancyGuard, Ownable {
         RegistryInterface Registry = RegistryInterface(registry);
         address pair = Registry.getPair(tokenIn, tokenOut);
         PairInterface Pair = PairInterface(pair);
-        amountOut = Pair.swapIn(
-            tokenIn,
-            tokenOut,
-            amountIn,
-            minAmountOut,
-            msg.sender
-        );
-        // get fee
-        require(amountOut >= minAmountOut);
-        // send fee to pair and protocolPerformanceFeeRecipient
+        amountOut = Pair.swapIn(tokenIn, tokenOut, amountIn);
+
+        require(amountOut >= minAmountOut, "amountOut less than minAmountOut");
+        ERC20 _token0 = ERC20(tokenIn);
+
+        _token0.transferFrom(msg.sender, address(pair), amountIn);
+        Pair.swap(tokenIn, amountIn, amountOut, msg.sender);
     }
 
     function swapOut(
@@ -67,15 +85,12 @@ contract Router is ReentrancyGuard, Ownable {
         RegistryInterface Registry = RegistryInterface(registry);
         address pair = Registry.getPair(tokenIn, tokenOut);
         PairInterface Pair = PairInterface(pair);
-        amountIn = Pair.swapOut(
-            tokenIn,
-            tokenOut,
-            amountOut,
-            maxAmountIn,
-            msg.sender
-        );
-        // get fee
-        require(maxAmountIn >= amountIn);
-        // send fee to pair and protocolPerformanceFeeRecipient
+        amountIn = Pair.swapOut(tokenIn, tokenOut, amountOut);
+
+        require(maxAmountIn >= amountIn, "maxAmountIn less than amountIn");
+        ERC20 _token0 = ERC20(tokenIn);
+
+        _token0.transferFrom(msg.sender, address(pair), amountIn);
+        Pair.swap(tokenIn, amountIn, amountOut, msg.sender);
     }
 }

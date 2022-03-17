@@ -53,8 +53,8 @@ describe("getTokenPrice", function () {
     const txToken0 = 100n * decimals;
     const txToken1 = 200n * decimals;
 
-    await acc1Token0.connect(acc1).approve(pair.address, txToken0);
-    await acc1Token1.connect(acc1).approve(pair.address, txToken1);
+    await acc1Token0.connect(acc1).approve(router.address, txToken0);
+    await acc1Token1.connect(acc1).approve(router.address, txToken1);
     await router.addLiquidity(acc1Token0.address, acc1Token1.address, txToken0, txToken1);
   })
 
