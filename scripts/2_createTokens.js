@@ -4,7 +4,7 @@ const DECIMALS = BigInt(10 ** 18);
 const AMOUNT_0 = BigInt(10000n * DECIMALS);
 const AMOUNT_1 = BigInt(20000n * DECIMALS);
 
-const factoryAddress = '0x3Aa5ebB10DC797CAC828524e59A333d0A371443c'
+const factoryAddress = '0x0DCd1Bf9A1b36cE34237eEaFef220932846BCD82'
 
 // - Contract deployment: LampCoin
 // - Contract deployment: LampCoin

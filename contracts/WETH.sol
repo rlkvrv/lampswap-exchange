@@ -1,9 +1,8 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "hardhat/console.sol";
-import "./libraries/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "./libraries/SafeMath.sol";
 
 contract WETH is ERC20 {
   constructor() ERC20("Wrapped ETH", "WETH") {}

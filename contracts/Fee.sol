@@ -2,9 +2,8 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "hardhat/console.sol";
+import "./interfaces/FeeInterface.sol";
 import "./libraries/SafeMath.sol";
-import "./FeeInterface.sol";
 
 contract Fee is FeeInterface, Ownable {
     uint256 private swapFee;

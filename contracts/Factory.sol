@@ -2,8 +2,8 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "./interfaces/RegistryInterface.sol";
 import "./Pair.sol";
-import "./RegistryInterface.sol";
 
 contract Factory is Ownable {
     address public router;

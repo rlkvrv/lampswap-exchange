@@ -2,14 +2,14 @@ const { ethers } = require("hardhat");
 
 const DECIMALS = BigInt(10 ** 18);
 
-const routerAddress = '0x68B1D87F95878fE05B998F19b66F4baba5De1aed'
-const registryAddress = '0xc6e7DF5E7b4f2A278906862b61205850344D4e7d'
+const routerAddress = '0xA51c1fc2f0D1a1b8494Ed1FE312d7C3a78Ed91C0'
+const registryAddress = '0x9A676e781A523b5d0C0e43731313A708CB607508'
 
-const tokenA_address = '0x09635F643e140090A9A8Dcd712eD6285858ceBef'
-const tokenB_address = '0xc5a5C42992dECbae36851359345FE25997F5C42d'
+const tokenA_address = '0x59b670e9fA9D0A427751Af201D676719a970857b'
+const tokenB_address = '0x4ed7c70F96B99c776995fB64377f0d4aB3B0e1C1'
 
 // Здесь токены выдают апрувы роутеру на списание
-// и  signer2 добавляет
+// и  signer добавляет ликвидность
 
 async function main() {
   const [signer] = await ethers.getSigners();
@@ -44,7 +44,7 @@ async function main() {
   // списываем у пользователя от имени signer2 на контракт Pair
   // 100 tokenA и 200 tokenB
   // то есть формируем ликвидность
-  console.group('\n TRANSACTION 1: ADD LIQUIDITY')
+  console.group('\n ADD LIQUIDITY')
   await router.addLiquidity(tokenA.address, tokenB.address, 100n * DECIMALS, 200n * DECIMALS);
 
   // Делаем проверку, что средства поступили на баланс Pair

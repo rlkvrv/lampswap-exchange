@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.0;
 
-import "./LampCoinInterface.sol";
+import "./interfaces/LampCoinInterface.sol";
 
 contract LampCoin is LampCoinInterface {
     constructor (uint256 _amount) {
