@@ -32,7 +32,7 @@ async function main() {
 
   const Fee = await ethers.getContractFactory("Fee", acc1);
   const fee = await (await Fee.deploy(1, 1, 2)).deployed();
-  console.log('Fee contract address: ', router.address);
+  console.log('Fee contract address: ', fee.address);
 
   //Шаг второй:
   //  - устанавливаем на роутере адрес регистри
