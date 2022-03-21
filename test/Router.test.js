@@ -196,4 +196,60 @@ describe("Router", function () {
       await expect(router.swapOut(acc1Token0.address, acc1Token1.address, 20, 10)).to.be.revertedWith('maxAmountIn less than amountIn');
     });
   });
+
+  describe("Tokens swap 2", async () => {
+    beforeEach(async () => {
+      await acc1Token0.connect(acc1).approve(router.address, 100);
+      await acc1Token1.connect(acc1).approve(router.address, 100);
+
+      await router.addLiquidity(acc1Token0.address, acc1Token1.address, 100, 100);
+    });
+
+
+    it("price of token1 for 10 tokens0 must be 9 token1", async () => {
+      expect(await pair.getTokenPrice(acc1Token0.address, 10)).to.be.eq(9);
+    });
+
+    it("price of token1 for 10 tokens1 must be 9 token0", async () => {
+      expect(await pair.getTokenPrice(acc1Token1.address, 10)).to.be.eq(9);
+    });
+
+    it("swapIn should be swap of token0 to token1 if amountOut >= minAmountOut", async () => {
+      await acc1Token0.connect(acc1).approve(router.address, 10);
+      await router.swapIn(acc1Token0.address, acc1Token1.address, 10, 9);
+      expect(await acc1Token0.balanceOf(acc1.address)).to.be.eq(9890);
+      expect(await acc1Token1.balanceOf(acc1.address)).to.be.eq(19909);
+    });
+
+    it("swapIn should be swap of token1 to token0 if amountOut >= minAmountOut", async () => {
+      await acc1Token1.connect(acc1).approve(router.address, 10);
+      await router.swapIn(acc1Token1.address, acc1Token0.address, 10, 9);
+      expect(await acc1Token0.balanceOf(acc1.address)).to.be.eq(9909);
+      expect(await acc1Token1.balanceOf(acc1.address)).to.be.eq(19890);
+    });
+
+    it("swapOut should be swap of token0 to token1 if maxAmountIn >= amountIn", async () => {
+      await acc1Token0.connect(acc1).approve(router.address, 10);
+      await router.swapOut(acc1Token0.address, acc1Token1.address, 9, 10);
+      expect(await acc1Token0.balanceOf(acc1.address)).to.be.eq(9891);
+      expect(await acc1Token1.balanceOf(acc1.address)).to.be.eq(19909);
+    });
+
+    it("swapOut should be swap of token1 to token0 if maxAmountIn >= amountIn", async () => {
+      await acc1Token1.connect(acc1).approve(router.address, 10);
+      await router.swapOut(acc1Token1.address, acc1Token0.address, 9, 10);
+      expect(await acc1Token0.balanceOf(acc1.address)).to.be.eq(9909);
+      expect(await acc1Token1.balanceOf(acc1.address)).to.be.eq(19891);
+    });
+
+    it("should be error if amountOut more than minAmountOut", async () => {
+      await acc1Token0.connect(acc1).approve(router.address, 10);
+      await expect(router.swapIn(acc1Token0.address, acc1Token1.address, 10, 20)).to.be.revertedWith('amountOut less than minAmountOut');
+    });
+
+    it("should be error if maxAmountIn more than amountIn", async () => {
+      await acc1Token0.connect(acc1).approve(router.address, 10);
+      await expect(router.swapOut(acc1Token0.address, acc1Token1.address, 20, 10)).to.be.revertedWith('maxAmountIn less than amountIn');
+    });
+  });
 });

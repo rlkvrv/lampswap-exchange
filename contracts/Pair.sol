@@ -154,31 +154,18 @@ contract Pair is PairInterface, ERC20, ReentrancyGuard, Ownable {
         returns (uint256)
     {
         require(_amount > 0, "amount too small");
-        require(
-            _token == token0 || _token == token1,
-            "This token is not found"
-        );
-        if (_token == token0) {
-            return _getAmount(_amount, reserve0, reserve1);
-        }
-        return _getAmount(_amount, reserve1, reserve0);
-    }
-
-    function _getAmount(
-        uint256 inputAmount,
-        uint256 inputReserve,
-        uint256 outputReserve
-    ) private view returns (uint256) {
-        require(inputReserve > 0 && outputReserve > 0, "invalid reserves");
         FeeInterface _fee = FeeInterface(fee);
         uint256 _swapFee = _fee.getSwapFee();
         uint256 _feeDecimals = _fee.getFeeDecimals();
-        uint256 inputAmountWithFee = inputAmount -
-            (inputAmount * _swapFee) /
-            10**_feeDecimals;
-        uint256 numerator = outputReserve * inputAmountWithFee;
-        uint256 denominator = inputReserve + inputAmountWithFee;
-        return numerator / denominator;
+        if (_token == token0) {
+            return
+                (reserve1 * _amount * (10**_feeDecimals - _swapFee)) /
+                ((reserve0 + _amount) * 10**_feeDecimals);
+        } else {
+            return
+                (reserve0 * _amount * (10**_feeDecimals - _swapFee)) /
+                ((reserve1 + _amount) * 10**_feeDecimals);
+        }
     }
 
     function swap(
