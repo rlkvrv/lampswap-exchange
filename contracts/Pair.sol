@@ -135,15 +135,16 @@ contract Pair is PairInterface, ERC20, ReentrancyGuard, Ownable {
         FeeInterface _fee = FeeInterface(fee);
         uint256 _swapFee = _fee.getSwapFee();
         uint256 _feeDecimals = _fee.getFeeDecimals();
+        uint256 _decimals = 10**_feeDecimals;
 
         if (tokenIn == token0) {
             amountIn =
-                (reserve0 * amountOut * 10**_feeDecimals) /
-                ((reserve1 - amountOut) * (10**_feeDecimals - _swapFee));
+                (reserve0.mul(amountOut).mul(_decimals)) /
+                ((reserve1.sub(amountOut)).mul((_decimals).sub(_swapFee)));
         } else {
             amountIn =
-                (reserve1 * amountOut * 10**_feeDecimals) /
-                ((reserve0 - amountOut) * (10**_feeDecimals - _swapFee));
+                (reserve1.mul(amountOut).mul(_decimals)) /
+                ((reserve0.sub(amountOut)).mul((_decimals).sub(_swapFee)));
         }
     }
 
@@ -157,14 +158,16 @@ contract Pair is PairInterface, ERC20, ReentrancyGuard, Ownable {
         FeeInterface _fee = FeeInterface(fee);
         uint256 _swapFee = _fee.getSwapFee();
         uint256 _feeDecimals = _fee.getFeeDecimals();
+        uint256 _decimals = 10**_feeDecimals;
+
         if (_token == token0) {
             return
-                (reserve1 * _amount * (10**_feeDecimals - _swapFee)) /
-                ((reserve0 + _amount) * 10**_feeDecimals);
+                (reserve1.mul(_amount).mul((_decimals).sub(_swapFee))) /
+                ((reserve0.add(_amount)).mul(_decimals));
         } else {
             return
-                (reserve0 * _amount * (10**_feeDecimals - _swapFee)) /
-                ((reserve1 + _amount) * 10**_feeDecimals);
+                (reserve0.mul(_amount).mul((_decimals).sub(_swapFee))) /
+                ((reserve1.add(_amount)).mul(_decimals));
         }
     }
 
