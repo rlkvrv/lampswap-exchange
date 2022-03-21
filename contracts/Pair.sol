@@ -16,8 +16,7 @@ contract Pair is PairInterface, ERC20, ReentrancyGuard, Ownable {
     address token1;
     address public router;
     address public fee;
-    uint256 public reserve0;
-    uint256 public reserve1;
+    uint256[2] public reserves;
 
     constructor(
         address _token0,
@@ -56,12 +55,13 @@ contract Pair is PairInterface, ERC20, ReentrancyGuard, Ownable {
         fee = _fee;
     }
 
-    function getReserve0() external view override returns (uint256) {
-        return reserve0;
-    }
-
-    function getReserve1() external view override returns (uint256) {
-        return reserve1;
+    function getReserve(uint256 index)
+        external
+        view
+        override
+        returns (uint256)
+    {
+        return reserves[index];
     }
 
     function addLiquidity(
@@ -70,17 +70,17 @@ contract Pair is PairInterface, ERC20, ReentrancyGuard, Ownable {
         uint256 amount1
     ) external override nonReentrant onlyRouter {
         uint256 liquidity;
-        if (reserve0 == 0) {
+        if (reserves[0] == 0) {
             liquidity = amount0.add(amount1);
             _mint(recipient, liquidity);
-            reserve0 = reserve0.add(amount0);
-            reserve1 = reserve1.add(amount1);
+            reserves[0] = reserves[0].add(amount0);
+            reserves[1] = reserves[1].add(amount1);
         } else {
             uint256 _totalSupply = this.totalSupply();
-            liquidity = (_totalSupply.mul(amount0)).div(reserve0);
+            liquidity = (_totalSupply.mul(amount0)).div(reserves[0]);
             _mint(recipient, liquidity);
-            reserve0 = reserve0.add(amount0);
-            reserve1 = reserve1.add(amount1);
+            reserves[0] = reserves[0].add(amount0);
+            reserves[1] = reserves[1].add(amount1);
         }
     }
 
@@ -94,13 +94,13 @@ contract Pair is PairInterface, ERC20, ReentrancyGuard, Ownable {
         ERC20 _token0 = ERC20(token0);
         ERC20 _token1 = ERC20(token1);
         uint256 _totalSupply = this.totalSupply();
-        uint256 token0Amount = (reserve0.mul(_amountLP)).div(_totalSupply);
-        uint256 token1Amount = (reserve1.mul(_amountLP)).div(_totalSupply);
+        uint256 token0Amount = (reserves[0].mul(_amountLP)).div(_totalSupply);
+        uint256 token1Amount = (reserves[1].mul(_amountLP)).div(_totalSupply);
         _burn(recipient, _amountLP);
         _token0.transfer(recipient, token0Amount);
         _token1.transfer(recipient, token1Amount);
-        reserve0 = reserve0.sub(token0Amount);
-        reserve1 = reserve1.sub(token1Amount);
+        reserves[0] = reserves[0].sub(token0Amount);
+        reserves[1] = reserves[1].sub(token1Amount);
     }
 
     function swapIn(
@@ -139,12 +139,12 @@ contract Pair is PairInterface, ERC20, ReentrancyGuard, Ownable {
 
         if (tokenIn == token0) {
             amountIn =
-                (reserve0.mul(amountOut).mul(_decimals)) /
-                ((reserve1.sub(amountOut)).mul((_decimals).sub(_swapFee)));
+                (reserves[0].mul(amountOut).mul(_decimals)) /
+                ((reserves[1].sub(amountOut)).mul((_decimals).sub(_swapFee)));
         } else {
             amountIn =
-                (reserve1.mul(amountOut).mul(_decimals)) /
-                ((reserve0.sub(amountOut)).mul((_decimals).sub(_swapFee)));
+                (reserves[1].mul(amountOut).mul(_decimals)) /
+                ((reserves[0].sub(amountOut)).mul((_decimals).sub(_swapFee)));
         }
     }
 
@@ -162,12 +162,12 @@ contract Pair is PairInterface, ERC20, ReentrancyGuard, Ownable {
 
         if (_token == token0) {
             return
-                (reserve1.mul(_amount).mul((_decimals).sub(_swapFee))) /
-                ((reserve0.add(_amount)).mul(_decimals));
+                (reserves[1].mul(_amount).mul((_decimals).sub(_swapFee))) /
+                ((reserves[0].add(_amount)).mul(_decimals));
         } else {
             return
-                (reserve0.mul(_amount).mul((_decimals).sub(_swapFee))) /
-                ((reserve1.add(_amount)).mul(_decimals));
+                (reserves[0].mul(_amount).mul((_decimals).sub(_swapFee))) /
+                ((reserves[1].add(_amount)).mul(_decimals));
         }
     }
 
@@ -183,13 +183,13 @@ contract Pair is PairInterface, ERC20, ReentrancyGuard, Ownable {
         if (_token == token0) {
             _token1.transfer(recipient, _amoutOut);
 
-            reserve0 = reserve0.add(_amountIn);
-            reserve1 = reserve1.sub(_amoutOut);
+            reserves[0] = reserves[0].add(_amountIn);
+            reserves[1] = reserves[1].sub(_amoutOut);
         } else {
             _token0.transfer(recipient, _amoutOut);
 
-            reserve1 = reserve1.add(_amountIn);
-            reserve0 = reserve0.sub(_amoutOut);
+            reserves[1] = reserves[1].add(_amountIn);
+            reserves[0] = reserves[0].sub(_amoutOut);
         }
     }
 }

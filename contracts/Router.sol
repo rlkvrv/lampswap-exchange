@@ -27,8 +27,8 @@ contract Router is ReentrancyGuard, Ownable {
         address pair = Registry.getPair(token0, token1);
         PairInterface Pair = PairInterface(pair);
 
-        uint256 _reserve0 = Pair.getReserve0();
-        uint256 _reserve1 = Pair.getReserve1();
+        uint256 _reserve0 = Pair.getReserve(0);
+        uint256 _reserve1 = Pair.getReserve(1);
         ERC20 _token0 = ERC20(token0);
         ERC20 _token1 = ERC20(token1);
         if (_reserve0 == 0) {

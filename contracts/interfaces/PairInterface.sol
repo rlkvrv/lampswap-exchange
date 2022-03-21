@@ -7,9 +7,7 @@ interface PairInterface {
 
     function setFee(address _fee) external;
 
-    function getReserve0() external view returns (uint256);
-
-    function getReserve1() external view returns (uint256);
+    function getReserve(uint index) external view returns (uint256);
 
     function addLiquidity(
         address recipient,
