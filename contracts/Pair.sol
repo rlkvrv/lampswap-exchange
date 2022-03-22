@@ -47,6 +47,9 @@ contract Pair is PairInterface, ERC20, ReentrancyGuard, Ownable {
         _;
     }
 
+    event Mint(address indexed sender, uint amount0, uint amount1);
+    event Burn(address indexed sender, uint amountLP);
+
     function setRouter(address _router) external override onlyOwner {
         router = _router;
     }
@@ -73,12 +76,14 @@ contract Pair is PairInterface, ERC20, ReentrancyGuard, Ownable {
         if (reserves[0] == 0) {
             liquidity = amount0.add(amount1);
             _mint(recipient, liquidity);
+            emit Mint(recipient, amount0, amount1);
             reserves[0] = reserves[0].add(amount0);
             reserves[1] = reserves[1].add(amount1);
         } else {
             uint256 _totalSupply = this.totalSupply();
             liquidity = (_totalSupply.mul(amount0)).div(reserves[0]);
             _mint(recipient, liquidity);
+            emit Mint(recipient, amount0, amount1);
             reserves[0] = reserves[0].add(amount0);
             reserves[1] = reserves[1].add(amount1);
         }
@@ -97,6 +102,7 @@ contract Pair is PairInterface, ERC20, ReentrancyGuard, Ownable {
         uint256 token0Amount = (reserves[0].mul(_amountLP)).div(_totalSupply);
         uint256 token1Amount = (reserves[1].mul(_amountLP)).div(_totalSupply);
         _burn(recipient, _amountLP);
+        emit Burn(recipient, _amountLP);
         _token0.transfer(recipient, token0Amount);
         _token1.transfer(recipient, token1Amount);
         reserves[0] = reserves[0].sub(token0Amount);

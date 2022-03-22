@@ -13,6 +13,10 @@ contract Router is ReentrancyGuard, Ownable {
 
     address public registry;
 
+    event Swap(address indexed sender, uint256 amountIn, uint256 amountOut);
+    event AddLiquidity(address indexed sender, uint256 amount0, uint256 amount1);
+    event RemoveLiquidity(address indexed sender, uint256 amountLP);
+
     function setRegistry(address _registry) external onlyOwner {
         registry = _registry;
     }
@@ -35,6 +39,7 @@ contract Router is ReentrancyGuard, Ownable {
             _token0.transferFrom(msg.sender, address(pair), amount0);
             _token1.transferFrom(msg.sender, address(pair), amount1);
             Pair.addLiquidity(msg.sender, amount0, amount1);
+            emit AddLiquidity(msg.sender, amount0, amount1);
         } else {
             uint256 token0Amount = (amount1.mul(_reserve0)).div(_reserve1);
             uint256 token1Amount = (amount0.mul(_reserve1)).div(_reserve0);
@@ -43,6 +48,7 @@ contract Router is ReentrancyGuard, Ownable {
             _token0.transferFrom(msg.sender, address(pair), amount0);
             _token1.transferFrom(msg.sender, address(pair), amount1);
             Pair.addLiquidity(msg.sender, amount0, amount1);
+            emit AddLiquidity(msg.sender, amount0, amount1);
         }
     }
 
@@ -55,6 +61,7 @@ contract Router is ReentrancyGuard, Ownable {
         address pair = Registry.getPair(token0, token1);
         PairInterface Pair = PairInterface(pair);
         Pair.removeLiquidity(amountLP, msg.sender);
+        emit RemoveLiquidity(msg.sender, amountLP);
     }
 
     function swapIn(
@@ -73,6 +80,7 @@ contract Router is ReentrancyGuard, Ownable {
 
         _token0.transferFrom(msg.sender, address(pair), amountIn);
         Pair.swap(tokenIn, amountIn, amountOut, msg.sender);
+        emit Swap(msg.sender, amountIn, amountOut);
     }
 
     function swapOut(
@@ -91,5 +99,6 @@ contract Router is ReentrancyGuard, Ownable {
 
         _token0.transferFrom(msg.sender, address(pair), amountIn);
         Pair.swap(tokenIn, amountIn, amountOut, msg.sender);
+        emit Swap(msg.sender, amountIn, amountOut);
     }
 }
