@@ -12,7 +12,7 @@ import "./interfaces/PairInterface.sol";
 contract Router is ReentrancyGuard, Ownable {
     using Address for address;
 
-    address public registry;
+    RegistryInterface registry;
 
     modifier onlyToken(address tokenIn, address tokenOut) {
         require(
@@ -31,10 +31,13 @@ contract Router is ReentrancyGuard, Ownable {
         uint256 amount1
     );
     event RemoveLiquidity(address indexed sender, uint256 amountLP);
+    event SetRegistry(address registry);
 
     function setRegistry(address _registry) external onlyOwner {
         require(_registry.isContract(), "Invalid registry address");
-        registry = _registry;
+        registry = RegistryInterface(_registry);
+
+        emit SetRegistry(_registry);
     }
 
     function addLiquidity(
@@ -47,24 +50,22 @@ contract Router is ReentrancyGuard, Ownable {
             token0.isContract() && token1.isContract() && token0 != token1,
             "Invalid token address"
         );
-        RegistryInterface Registry = RegistryInterface(registry);
-        address pair = Registry.getPair(token0, token1);
-        PairInterface Pair = PairInterface(pair);
+        PairInterface Pair = PairInterface(registry.getPair(token0, token1));
 
         uint256 _reserve0 = Pair.getReserve(0);
         uint256 _reserve1 = Pair.getReserve(1);
-        ERC20 _token0 = ERC20(token0);
-        ERC20 _token1 = ERC20(token1);
+
         if (_reserve0 == 0) {
             require(
-                _token0.transferFrom(msg.sender, address(pair), amount0),
+                ERC20(token0).transferFrom(msg.sender, address(Pair), amount0),
                 "Transfer reverted"
             );
             require(
-                _token1.transferFrom(msg.sender, address(pair), amount1),
+                ERC20(token1).transferFrom(msg.sender, address(Pair), amount1),
                 "Transfer reverted"
             );
             Pair.addLiquidity(msg.sender, amount0, amount1);
+
             emit AddLiquidity(msg.sender, amount0, amount1);
         } else {
             uint256 token0Amount = (amount1 * _reserve0) / _reserve1;
@@ -72,14 +73,15 @@ contract Router is ReentrancyGuard, Ownable {
             require(amount0 >= token0Amount, "Insufficient token0 amount");
             require(amount1 >= token1Amount, "Insufficient token1 amount");
             require(
-                _token0.transferFrom(msg.sender, address(pair), amount0),
+                ERC20(token0).transferFrom(msg.sender, address(Pair), amount0),
                 "Transfer reverted"
             );
             require(
-                _token1.transferFrom(msg.sender, address(pair), amount1),
+                ERC20(token1).transferFrom(msg.sender, address(Pair), amount1),
                 "Transfer reverted"
             );
             Pair.addLiquidity(msg.sender, amount0, amount1);
+
             emit AddLiquidity(msg.sender, amount0, amount1);
         }
     }
@@ -89,10 +91,9 @@ contract Router is ReentrancyGuard, Ownable {
         address token1,
         uint256 amountLP
     ) external onlyToken(token0, token1) {
-        RegistryInterface Registry = RegistryInterface(registry);
-        address pair = Registry.getPair(token0, token1);
-        PairInterface Pair = PairInterface(pair);
+        PairInterface Pair = PairInterface(registry.getPair(token0, token1));
         Pair.removeLiquidity(amountLP, msg.sender);
+
         emit RemoveLiquidity(msg.sender, amountLP);
     }
 
@@ -107,16 +108,16 @@ contract Router is ReentrancyGuard, Ownable {
         onlyToken(tokenIn, tokenOut)
         returns (uint256 amountOut)
     {
-        RegistryInterface Registry = RegistryInterface(registry);
-        address pair = Registry.getPair(tokenIn, tokenOut);
-        PairInterface Pair = PairInterface(pair);
+        PairInterface Pair = PairInterface(registry.getPair(tokenIn, tokenOut));
         amountOut = Pair.swapIn(tokenIn, tokenOut, amountIn);
 
         require(amountOut >= minAmountOut, "amountOut less than minAmountOut");
-        ERC20 _token0 = ERC20(tokenIn);
-
-        require(_token0.transferFrom(msg.sender, address(pair), amountIn), "Transfer reverted");
+        require(
+            ERC20(tokenIn).transferFrom(msg.sender, address(Pair), amountIn),
+            "Transfer reverted"
+        );
         Pair.swap(tokenIn, amountIn, amountOut, msg.sender);
+
         emit Swap(msg.sender, amountIn, amountOut);
     }
 
@@ -131,16 +132,16 @@ contract Router is ReentrancyGuard, Ownable {
         onlyToken(tokenIn, tokenOut)
         returns (uint256 amountIn)
     {
-        RegistryInterface Registry = RegistryInterface(registry);
-        address pair = Registry.getPair(tokenIn, tokenOut);
-        PairInterface Pair = PairInterface(pair);
+        PairInterface Pair = PairInterface(registry.getPair(tokenIn, tokenOut));
         amountIn = Pair.swapOut(tokenIn, tokenOut, amountOut);
 
         require(maxAmountIn >= amountIn, "maxAmountIn less than amountIn");
-        ERC20 _token0 = ERC20(tokenIn);
-
-        require(_token0.transferFrom(msg.sender, address(pair), amountIn), "Transfer reverted");
+        require(
+            ERC20(tokenIn).transferFrom(msg.sender, address(Pair), amountIn),
+            "Transfer reverted"
+        );
         Pair.swap(tokenIn, amountIn, amountOut, msg.sender);
+
         emit Swap(msg.sender, amountIn, amountOut);
     }
 }

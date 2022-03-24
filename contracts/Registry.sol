@@ -19,9 +19,14 @@ contract Registry is RegistryInterface, Ownable {
         _;
     }
 
+    event SetFactory(address factory);
+    event SetPair(address token0, address token1, address pair);
+
     function setFactory(address _factory) external override onlyOwner {
         require(_factory.isContract(), "Invalid factory address");
         factory = _factory;
+
+        emit SetFactory(_factory);
     }
 
     function setPair(
@@ -32,6 +37,8 @@ contract Registry is RegistryInterface, Ownable {
         getPairAddress[token0][token1] = pairAddress;
         getPairAddress[token1][token0] = pairAddress;
         allPairs.push(pairAddress);
+
+        emit SetPair(token0, token1, pairAddress);
     }
 
     function getPair(address token0, address token1)

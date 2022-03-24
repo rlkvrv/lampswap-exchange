@@ -37,11 +37,6 @@ describe("Factory", function () {
     expect(await factory.router()).to.be.eq(router.address);
   });
 
-  it("setRegistry should set registry address", async function () {
-    await factory.setRegistry(registry.address);
-    expect(await factory.registry()).to.be.eq(registry.address);
-  });
-
   it("setFee should set fee address", async function () {
     await factory.setFee(fee.address);
     expect(await factory.fee()).to.be.eq(fee.address);

@@ -19,6 +19,12 @@ contract Fee is Ownable {
         feeDecimals = _feeDecimals;
     }
 
+    event SetFeeParams(
+        uint256 swapFee,
+        uint256 protocolPerformanceFee,
+        uint256 feeDecimals
+    );
+
     function setFeeParams(
         uint256 _swapFee,
         uint256 _protocolPerformanceFee,
@@ -27,5 +33,7 @@ contract Fee is Ownable {
         swapFee = _swapFee;
         protocolPerformanceFee = _protocolPerformanceFee;
         feeDecimals = _feeDecimals;
+
+        emit SetFeeParams(swapFee, protocolPerformanceFee, feeDecimals);
     }
 }

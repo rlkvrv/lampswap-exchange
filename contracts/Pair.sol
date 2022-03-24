@@ -55,15 +55,21 @@ contract Pair is PairInterface, ERC20, ReentrancyGuard, Ownable {
 
     event Mint(address indexed sender, uint256 amount0, uint256 amount1);
     event Burn(address indexed sender, uint256 amountLP);
+    event SetRouter(address router);
+    event SetFee(address fee);
 
     function setRouter(address _router) external override onlyOwner {
         require(_router.isContract(), "Invalid router address");
         router = _router;
+
+        emit SetRouter(_router);
     }
 
     function setFee(address _fee) external override onlyOwner {
         require(_fee.isContract(), "Invalid fee address");
         fee = _fee;
+
+        emit SetFee(_fee);
     }
 
     function getReserve(uint256 index)
@@ -106,15 +112,20 @@ contract Pair is PairInterface, ERC20, ReentrancyGuard, Ownable {
     {
         require(recipient != address(0), "Invalid recipient address");
         require(_amountLP > 0, "Invalid amount");
-        ERC20 _token0 = ERC20(token0);
-        ERC20 _token1 = ERC20(token1);
+
         uint256 _totalSupply = this.totalSupply();
         uint256 token0Amount = (reserves[0] * _amountLP) / _totalSupply;
         uint256 token1Amount = (reserves[1] * _amountLP) / _totalSupply;
         _burn(recipient, _amountLP);
         emit Burn(recipient, _amountLP);
-        require(_token0.transfer(recipient, token0Amount), "Transfer reverted");
-        require(_token1.transfer(recipient, token1Amount), "Transfer reverted");
+        require(
+            ERC20(token0).transfer(recipient, token0Amount),
+            "Transfer reverted"
+        );
+        require(
+            ERC20(token1).transfer(recipient, token1Amount),
+            "Transfer reverted"
+        );
         reserves[0] = reserves[0] - token0Amount;
         reserves[1] = reserves[1] - token1Amount;
     }
@@ -196,15 +207,20 @@ contract Pair is PairInterface, ERC20, ReentrancyGuard, Ownable {
             "Invalid address"
         );
         require(_amountIn > 0, "amount too small");
-        ERC20 _token0 = ERC20(token0);
-        ERC20 _token1 = ERC20(token1);
+
         if (_token == token0) {
-            require(_token1.transfer(recipient, _amoutOut), "Transfer reverted");
+            require(
+                ERC20(token1).transfer(recipient, _amoutOut),
+                "Transfer reverted"
+            );
 
             reserves[0] = reserves[0] + _amountIn;
             reserves[1] = reserves[1] - _amoutOut;
         } else {
-            require(_token0.transfer(recipient, _amoutOut), "Transfer reverted");
+            require(
+                ERC20(token0).transfer(recipient, _amoutOut),
+                "Transfer reverted"
+            );
 
             reserves[1] = reserves[1] + _amountIn;
             reserves[0] = reserves[0] - _amoutOut;
