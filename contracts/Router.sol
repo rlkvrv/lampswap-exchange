@@ -2,6 +2,7 @@
 
 pragma solidity 0.8.10;
 
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
@@ -11,6 +12,7 @@ import "./interfaces/PairInterface.sol";
 
 contract Router is ReentrancyGuard, Ownable {
     using Address for address;
+    using SafeERC20 for ERC20;
 
     RegistryInterface registry;
 
@@ -56,14 +58,8 @@ contract Router is ReentrancyGuard, Ownable {
         uint256 _reserve1 = Pair.getReserve(1);
 
         if (_reserve0 == 0) {
-            require(
-                ERC20(token0).transferFrom(msg.sender, address(Pair), amount0),
-                "Transfer reverted"
-            );
-            require(
-                ERC20(token1).transferFrom(msg.sender, address(Pair), amount1),
-                "Transfer reverted"
-            );
+            ERC20(token0).safeTransferFrom(msg.sender, address(Pair), amount0);
+            ERC20(token1).safeTransferFrom(msg.sender, address(Pair), amount1);
             Pair.addLiquidity(msg.sender, amount0, amount1);
 
             emit AddLiquidity(msg.sender, amount0, amount1);
@@ -72,14 +68,8 @@ contract Router is ReentrancyGuard, Ownable {
             uint256 token1Amount = (amount0 * _reserve1) / _reserve0;
             require(amount0 >= token0Amount, "Insufficient token0 amount");
             require(amount1 >= token1Amount, "Insufficient token1 amount");
-            require(
-                ERC20(token0).transferFrom(msg.sender, address(Pair), amount0),
-                "Transfer reverted"
-            );
-            require(
-                ERC20(token1).transferFrom(msg.sender, address(Pair), amount1),
-                "Transfer reverted"
-            );
+            ERC20(token0).safeTransferFrom(msg.sender, address(Pair), amount0);
+            ERC20(token1).safeTransferFrom(msg.sender, address(Pair), amount1);
             Pair.addLiquidity(msg.sender, amount0, amount1);
 
             emit AddLiquidity(msg.sender, amount0, amount1);
@@ -112,10 +102,7 @@ contract Router is ReentrancyGuard, Ownable {
         amountOut = Pair.swapIn(tokenIn, tokenOut, amountIn);
 
         require(amountOut >= minAmountOut, "amountOut less than minAmountOut");
-        require(
-            ERC20(tokenIn).transferFrom(msg.sender, address(Pair), amountIn),
-            "Transfer reverted"
-        );
+        ERC20(tokenIn).safeTransferFrom(msg.sender, address(Pair), amountIn);
         Pair.swap(tokenIn, amountIn, amountOut, msg.sender);
 
         emit Swap(msg.sender, amountIn, amountOut);
@@ -136,10 +123,7 @@ contract Router is ReentrancyGuard, Ownable {
         amountIn = Pair.swapOut(tokenIn, tokenOut, amountOut);
 
         require(maxAmountIn >= amountIn, "maxAmountIn less than amountIn");
-        require(
-            ERC20(tokenIn).transferFrom(msg.sender, address(Pair), amountIn),
-            "Transfer reverted"
-        );
+        ERC20(tokenIn).safeTransferFrom(msg.sender, address(Pair), amountIn);
         Pair.swap(tokenIn, amountIn, amountOut, msg.sender);
 
         emit Swap(msg.sender, amountIn, amountOut);

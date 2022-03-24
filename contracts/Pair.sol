@@ -2,6 +2,7 @@
 
 pragma solidity 0.8.10;
 
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
@@ -11,6 +12,7 @@ import "./Fee.sol";
 
 contract Pair is PairInterface, ERC20, ReentrancyGuard, Ownable {
     using Address for address;
+    using SafeERC20 for ERC20;
 
     address token0;
     address token1;
@@ -118,14 +120,8 @@ contract Pair is PairInterface, ERC20, ReentrancyGuard, Ownable {
         uint256 token1Amount = (reserves[1] * _amountLP) / _totalSupply;
         _burn(recipient, _amountLP);
         emit Burn(recipient, _amountLP);
-        require(
-            ERC20(token0).transfer(recipient, token0Amount),
-            "Transfer reverted"
-        );
-        require(
-            ERC20(token1).transfer(recipient, token1Amount),
-            "Transfer reverted"
-        );
+        ERC20(token0).safeTransfer(recipient, token0Amount);
+        ERC20(token1).safeTransfer(recipient, token1Amount);
         reserves[0] = reserves[0] - token0Amount;
         reserves[1] = reserves[1] - token1Amount;
     }
@@ -209,18 +205,12 @@ contract Pair is PairInterface, ERC20, ReentrancyGuard, Ownable {
         require(_amountIn > 0, "amount too small");
 
         if (_token == token0) {
-            require(
-                ERC20(token1).transfer(recipient, _amoutOut),
-                "Transfer reverted"
-            );
+            ERC20(token1).safeTransfer(recipient, _amoutOut);
 
             reserves[0] = reserves[0] + _amountIn;
             reserves[1] = reserves[1] - _amoutOut;
         } else {
-            require(
-                ERC20(token0).transfer(recipient, _amoutOut),
-                "Transfer reverted"
-            );
+            ERC20(token0).safeTransfer(recipient, _amoutOut);
 
             reserves[1] = reserves[1] + _amountIn;
             reserves[0] = reserves[0] - _amoutOut;
