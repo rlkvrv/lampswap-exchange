@@ -113,8 +113,8 @@ contract Pair is PairInterface, ERC20, ReentrancyGuard, Ownable {
         uint256 token1Amount = (reserves[1] * _amountLP) / _totalSupply;
         _burn(recipient, _amountLP);
         emit Burn(recipient, _amountLP);
-        _token0.transfer(recipient, token0Amount);
-        _token1.transfer(recipient, token1Amount);
+        require(_token0.transfer(recipient, token0Amount), "Transfer reverted");
+        require(_token1.transfer(recipient, token1Amount), "Transfer reverted");
         reserves[0] = reserves[0] - token0Amount;
         reserves[1] = reserves[1] - token1Amount;
     }
@@ -201,12 +201,12 @@ contract Pair is PairInterface, ERC20, ReentrancyGuard, Ownable {
         ERC20 _token0 = ERC20(token0);
         ERC20 _token1 = ERC20(token1);
         if (_token == token0) {
-            _token1.transfer(recipient, _amoutOut);
+            require(_token1.transfer(recipient, _amoutOut), "Transfer reverted");
 
             reserves[0] = reserves[0] + _amountIn;
             reserves[1] = reserves[1] - _amoutOut;
         } else {
-            _token0.transfer(recipient, _amoutOut);
+            require(_token0.transfer(recipient, _amoutOut), "Transfer reverted");
 
             reserves[1] = reserves[1] + _amountIn;
             reserves[0] = reserves[0] - _amoutOut;
