@@ -7,11 +7,8 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./interfaces/PairInterface.sol";
 import "./interfaces/FeeInterface.sol";
-import "./libraries/SafeMath.sol";
 
 contract Pair is PairInterface, ERC20, ReentrancyGuard, Ownable {
-    using SafeMath for uint256;
-
     address token0;
     address token1;
     address public router;
@@ -74,18 +71,18 @@ contract Pair is PairInterface, ERC20, ReentrancyGuard, Ownable {
     ) external override nonReentrant onlyRouter {
         uint256 liquidity;
         if (reserves[0] == 0) {
-            liquidity = amount0.add(amount1);
+            liquidity = amount0 + amount1;
             _mint(recipient, liquidity);
             emit Mint(recipient, amount0, amount1);
-            reserves[0] = reserves[0].add(amount0);
-            reserves[1] = reserves[1].add(amount1);
+            reserves[0] = reserves[0] + amount0;
+            reserves[1] = reserves[1] + amount1;
         } else {
             uint256 _totalSupply = this.totalSupply();
-            liquidity = (_totalSupply.mul(amount0)).div(reserves[0]);
+            liquidity = _totalSupply * amount0 / reserves[0];
             _mint(recipient, liquidity);
             emit Mint(recipient, amount0, amount1);
-            reserves[0] = reserves[0].add(amount0);
-            reserves[1] = reserves[1].add(amount1);
+            reserves[0] = reserves[0] + amount0;
+            reserves[1] = reserves[1] + amount1;
         }
     }
 
@@ -99,14 +96,14 @@ contract Pair is PairInterface, ERC20, ReentrancyGuard, Ownable {
         ERC20 _token0 = ERC20(token0);
         ERC20 _token1 = ERC20(token1);
         uint256 _totalSupply = this.totalSupply();
-        uint256 token0Amount = (reserves[0].mul(_amountLP)).div(_totalSupply);
-        uint256 token1Amount = (reserves[1].mul(_amountLP)).div(_totalSupply);
+        uint256 token0Amount = reserves[0] * _amountLP / _totalSupply;
+        uint256 token1Amount = reserves[1] * _amountLP / _totalSupply;
         _burn(recipient, _amountLP);
         emit Burn(recipient, _amountLP);
         _token0.transfer(recipient, token0Amount);
         _token1.transfer(recipient, token1Amount);
-        reserves[0] = reserves[0].sub(token0Amount);
-        reserves[1] = reserves[1].sub(token1Amount);
+        reserves[0] = reserves[0] - token0Amount;
+        reserves[1] = reserves[1] - token1Amount;
     }
 
     function swapIn(
@@ -145,12 +142,12 @@ contract Pair is PairInterface, ERC20, ReentrancyGuard, Ownable {
 
         if (tokenIn == token0) {
             amountIn =
-                (reserves[0].mul(amountOut).mul(_decimals)) /
-                ((reserves[1].sub(amountOut)).mul((_decimals).sub(_swapFee)));
+                (reserves[0] * amountOut * _decimals) /
+                ((reserves[1] - amountOut) * (_decimals - _swapFee));
         } else {
             amountIn =
-                (reserves[1].mul(amountOut).mul(_decimals)) /
-                ((reserves[0].sub(amountOut)).mul((_decimals).sub(_swapFee)));
+                (reserves[1] * amountOut * _decimals) /
+                ((reserves[0] - amountOut) * (_decimals - _swapFee));
         }
     }
 
@@ -168,12 +165,12 @@ contract Pair is PairInterface, ERC20, ReentrancyGuard, Ownable {
 
         if (_token == token0) {
             return
-                (reserves[1].mul(_amount).mul((_decimals).sub(_swapFee))) /
-                ((reserves[0].add(_amount)).mul(_decimals));
+                (reserves[1] * _amount * (_decimals - _swapFee)) /
+                ((reserves[0] + _amount) * _decimals);
         } else {
             return
-                (reserves[0].mul(_amount).mul((_decimals).sub(_swapFee))) /
-                ((reserves[1].add(_amount)).mul(_decimals));
+                (reserves[0] * _amount * (_decimals - _swapFee)) /
+                ((reserves[1] + _amount) * _decimals);
         }
     }
 
@@ -189,13 +186,13 @@ contract Pair is PairInterface, ERC20, ReentrancyGuard, Ownable {
         if (_token == token0) {
             _token1.transfer(recipient, _amoutOut);
 
-            reserves[0] = reserves[0].add(_amountIn);
-            reserves[1] = reserves[1].sub(_amoutOut);
+            reserves[0] = reserves[0] + _amountIn;
+            reserves[1] = reserves[1] - _amoutOut;
         } else {
             _token0.transfer(recipient, _amoutOut);
 
-            reserves[1] = reserves[1].add(_amountIn);
-            reserves[0] = reserves[0].sub(_amoutOut);
+            reserves[1] = reserves[1] + _amountIn;
+            reserves[0] = reserves[0] - _amoutOut;
         }
     }
 }

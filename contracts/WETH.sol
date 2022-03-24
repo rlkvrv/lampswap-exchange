@@ -3,7 +3,6 @@
 pragma solidity 0.8.10;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "./libraries/SafeMath.sol";
 
 contract WETH is ERC20 {
   constructor() ERC20("Wrapped ETH", "WETH") {}

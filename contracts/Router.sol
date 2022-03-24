@@ -7,11 +7,8 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./interfaces/RegistryInterface.sol";
 import "./interfaces/PairInterface.sol";
-import "./libraries/SafeMath.sol";
 
 contract Router is ReentrancyGuard, Ownable {
-    using SafeMath for uint256;
-
     address public registry;
 
     event Swap(address indexed sender, uint256 amountIn, uint256 amountOut);
@@ -42,8 +39,8 @@ contract Router is ReentrancyGuard, Ownable {
             Pair.addLiquidity(msg.sender, amount0, amount1);
             emit AddLiquidity(msg.sender, amount0, amount1);
         } else {
-            uint256 token0Amount = (amount1.mul(_reserve0)).div(_reserve1);
-            uint256 token1Amount = (amount0.mul(_reserve1)).div(_reserve0);
+            uint256 token0Amount = amount1 * _reserve0 / _reserve1;
+            uint256 token1Amount = amount0 * _reserve1 / _reserve0;
             require(amount0 >= token0Amount, "Insufficient token0 amount");
             require(amount1 >= token1Amount, "Insufficient token1 amount");
             _token0.transferFrom(msg.sender, address(pair), amount0);
