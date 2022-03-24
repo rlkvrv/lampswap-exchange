@@ -22,9 +22,9 @@ describe("Fee", function () {
 
   it("setFeeParams should set new fee params", async function () {
     await fee.setFeeParams(2,3,4);
-    expect(await fee.getSwapFee()).to.be.eq(2);
-    expect(await fee.getProtocolPerformanceFee()).to.be.eq(3);
-    expect(await fee.getFeeDecimals()).to.be.eq(4);
+    expect(await fee.swapFee()).to.be.eq(2);
+    expect(await fee.protocolPerformanceFee()).to.be.eq(3);
+    expect(await fee.feeDecimals()).to.be.eq(4);
   });
 
   it("only owner may set params", async function () {

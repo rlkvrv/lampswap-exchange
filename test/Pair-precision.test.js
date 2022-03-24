@@ -20,11 +20,11 @@ describe("getTokenPrice", function () {
   beforeEach(async function () {
     [acc1, acc2] = await ethers.getSigners();
 
-    acc1Token0 = await (await (await ethers.getContractFactory('LampCoin', acc1))
-      .deploy(token0Amount))
+    acc1Token0 = await (await (await ethers.getContractFactory('ERC20Token', acc1))
+      .deploy("LampTokenA", "LTA", token0Amount))
       .deployed();
-    acc1Token1 = await (await (await ethers.getContractFactory('LampCoin', acc1))
-      .deploy(token1Amount))
+    acc1Token1 = await (await (await ethers.getContractFactory('ERC20Token', acc1))
+      .deploy("LampTokenB", "LTB", token1Amount))
       .deployed();
 
     const Router = await ethers.getContractFactory('Router', acc1);

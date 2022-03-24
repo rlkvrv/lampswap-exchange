@@ -9,15 +9,16 @@ describe("Registry", function () {
   let token1;
   let pair;
   let router;
+  let fee;
 
   beforeEach(async function () {
     [acc1, acc2] = await ethers.getSigners();
 
-    token0 = await (await (await ethers.getContractFactory('LampCoin', acc1))
-      .deploy(10000))
+    token0 = await (await (await ethers.getContractFactory('ERC20Token', acc1))
+      .deploy("LampTokenA", "LTA", 10000))
       .deployed();
-    token1 = await (await (await ethers.getContractFactory('LampCoin', acc1))
-      .deploy(20000))
+    token1 = await (await (await ethers.getContractFactory('ERC20Token', acc1))
+      .deploy("LampTokenB", "LTB", 20000))
       .deployed();
     
     const Router = await ethers.getContractFactory('Router', acc1);

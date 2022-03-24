@@ -11,11 +11,11 @@ describe("Pair", function () {
 
   beforeEach(async function () {
     [acc1, acc2, router, fee] = await ethers.getSigners();
-    acc1Token0 = await (await (await ethers.getContractFactory('LampCoin', acc1))
-      .deploy(10000))
+    acc1Token0 = await (await (await ethers.getContractFactory('ERC20Token', acc1))
+      .deploy("LampTokenA", "LTA", 10000))
       .deployed();
-    acc1Token1 = await (await (await ethers.getContractFactory('LampCoin', acc1))
-      .deploy(20000))
+    acc1Token1 = await (await (await ethers.getContractFactory('ERC20Token', acc1))
+      .deploy("LampTokenB", "LTB", 20000))
       .deployed();
 
     const Pair = await ethers.getContractFactory("Pair", acc1);

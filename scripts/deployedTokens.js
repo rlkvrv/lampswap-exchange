@@ -10,10 +10,10 @@ async function main() {
   const [signer] = await ethers.getSigners();
 
   // создаем два токена от имени signer2
-  const LampTokenA = await ethers.getContractFactory('LampTokenA', signer);
-  const tokenA = await (await LampTokenA.deploy(AMOUNT_0)).deployed();
-  const LampTokenB = await ethers.getContractFactory('LampTokenB', signer);
-  const tokenB = await (await LampTokenB.deploy(AMOUNT_1)).deployed();
+  const LampTokenA = await ethers.getContractFactory('ERC20Token', signer);
+  const tokenA = await (await LampTokenA.deploy("LampTokenA", "LTA", AMOUNT_0)).deployed();
+  const LampTokenB = await ethers.getContractFactory('ERC20Token', signer);
+  const tokenB = await (await LampTokenB.deploy("LampTokenB", "LTB", AMOUNT_1)).deployed();
 
   // Проверяем баланс токенов на signer2
   console.log('\nADDRESS tokenA: ', tokenA.address);

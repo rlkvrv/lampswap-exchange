@@ -7,6 +7,7 @@ describe("Factory", function () {
   let factory;
   let registry;
   let fee;
+  let router;
 
   beforeEach(async function () {
     [acc1, acc2] = await ethers.getSigners();
@@ -47,11 +48,11 @@ describe("Factory", function () {
   });
 
   it("createPair should create pair and set pair in registry", async function () {
-    const token0 = await (await (await ethers.getContractFactory('LampCoin', acc1))
-      .deploy(10000))
+    const token0 = await (await (await ethers.getContractFactory('ERC20Token', acc1))
+      .deploy("LampTokenA", "LTA", 10000))
       .deployed();
-    const token1 = await (await (await ethers.getContractFactory('LampCoin', acc1))
-      .deploy(20000))
+    const token1 = await (await (await ethers.getContractFactory('ERC20Token', acc1))
+      .deploy("LampTokenB", "LTB", 20000))
       .deployed();
   
     await factory.setRegistry(registry.address);

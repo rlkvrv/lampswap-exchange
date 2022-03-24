@@ -15,11 +15,11 @@ describe("Router", function () {
   beforeEach(async function () {
     [acc1, acc2] = await ethers.getSigners();
 
-    acc1Token0 = await (await (await ethers.getContractFactory('LampCoin', acc1))
-      .deploy(10000))
+    acc1Token0 = await (await (await ethers.getContractFactory('ERC20Token', acc1))
+      .deploy("LampTokenA", "LTA", 10000))
       .deployed();
-    acc1Token1 = await (await (await ethers.getContractFactory('LampCoin', acc1))
-      .deploy(20000))
+    acc1Token1 = await (await (await ethers.getContractFactory('ERC20Token', acc1))
+      .deploy("LampTokenB", "LTB", 20000))
       .deployed();
 
     const Router = await ethers.getContractFactory('Router', acc1);

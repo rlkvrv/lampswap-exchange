@@ -2,18 +2,18 @@ const { ethers } = require("hardhat");
 
 const DECIMALS = BigInt(10 ** 18);
 
-const routerAddress = '0xA51c1fc2f0D1a1b8494Ed1FE312d7C3a78Ed91C0'
-const registryAddress = '0x9A676e781A523b5d0C0e43731313A708CB607508'
+const routerAddress = '0x5FbDB2315678afecb367f032d93F642f64180aa3'
+const registryAddress = '0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0'
 
-const tokenA_address = '0x59b670e9fA9D0A427751Af201D676719a970857b'
-const tokenB_address = '0x4ed7c70F96B99c776995fB64377f0d4aB3B0e1C1'
+const tokenA_address = '0x8A791620dd6260079BF849Dc5567aDC3F2FdC318'
+const tokenB_address = '0x610178dA211FEF7D417bC0e6FeD39F05609AD788'
 
 // Здесь токены выдают апрувы роутеру на списание
 // и  signer добавляет ликвидность
 
 async function main() {
   const [signer] = await ethers.getSigners();
-  
+
   // для взаимодействия с контрактами получаем abi
   const Registry = require("../artifacts/contracts/Registry.sol/Registry.json");
   const registry = new ethers.Contract(registryAddress, Registry.abi, signer);
@@ -21,7 +21,7 @@ async function main() {
   const Router = require("../artifacts/contracts/Router.sol/Router.json");
   const router = new ethers.Contract(routerAddress, Router.abi, signer);
 
-  const Token = require("../artifacts/contracts/LampCoin.sol/LampCoin.json");
+  const Token = require("../artifacts/contracts/ERC20Token.sol/ERC20Token.json");
   const tokenA = new ethers.Contract(tokenA_address, Token.abi, signer);
   const tokenB = new ethers.Contract(tokenB_address, Token.abi, signer);
 
@@ -40,7 +40,7 @@ async function main() {
   const pairAddress = await registry.getPair(tokenA.address, tokenB.address);
   const Pair = require("../artifacts/contracts/Pair.sol/Pair.json");
   const pair = new ethers.Contract(pairAddress, Pair.abi, signer);
-  
+
   // списываем у пользователя от имени signer2 на контракт Pair
   // 100 tokenA и 200 tokenB
   // то есть формируем ликвидность
