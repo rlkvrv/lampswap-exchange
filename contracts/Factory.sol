@@ -35,8 +35,7 @@ contract Factory is Ownable {
             "Invalid token address"
         );
         Pair pair = new Pair(token0, token1, router, fee);
-        RegistryInterface _registry = RegistryInterface(registry);
         pair.transferOwnership(msg.sender);
-        _registry.setPair(token0, token1, address(pair));
+        RegistryInterface(registry).setPair(token0, token1, address(pair));
     }
 }

@@ -7,7 +7,7 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 import "./interfaces/PairInterface.sol";
-import "./interfaces/FeeInterface.sol";
+import "./Fee.sol";
 
 contract Pair is PairInterface, ERC20, ReentrancyGuard, Ownable {
     using Address for address;
@@ -148,9 +148,8 @@ contract Pair is PairInterface, ERC20, ReentrancyGuard, Ownable {
         returns (uint256 amountIn)
     {
         require(amountOut > 0, "amount too small");
-        FeeInterface _fee = FeeInterface(fee);
-        uint256 _swapFee = _fee.getSwapFee();
-        uint256 _feeDecimals = _fee.getFeeDecimals();
+        uint256 _swapFee = Fee(fee).swapFee();
+        uint256 _feeDecimals = Fee(fee).feeDecimals();
         uint256 _decimals = 10**_feeDecimals;
 
         if (tokenIn == token0) {
@@ -171,9 +170,8 @@ contract Pair is PairInterface, ERC20, ReentrancyGuard, Ownable {
         returns (uint256)
     {
         require(_amount > 0, "amount too small");
-        FeeInterface _fee = FeeInterface(fee);
-        uint256 _swapFee = _fee.getSwapFee();
-        uint256 _feeDecimals = _fee.getFeeDecimals();
+        uint256 _swapFee = Fee(fee).swapFee();
+        uint256 _feeDecimals = Fee(fee).feeDecimals();
         uint256 _decimals = 10**_feeDecimals;
 
         if (_token == token0) {
