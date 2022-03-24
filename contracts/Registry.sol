@@ -3,9 +3,12 @@
 pragma solidity 0.8.10;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/utils/Address.sol";
 import "./interfaces/RegistryInterface.sol";
 
 contract Registry is RegistryInterface, Ownable {
+    using Address for address;
+
     address public factory;
     address[] public allPairs;
 
@@ -17,6 +20,7 @@ contract Registry is RegistryInterface, Ownable {
     }
 
     function setFactory(address _factory) external override onlyOwner {
+        require(_factory.isContract(), "Invalid factory address");
         factory = _factory;
     }
 

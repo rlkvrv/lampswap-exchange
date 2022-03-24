@@ -21,11 +21,13 @@ contract LampCoin is LampCoinInterface {
     event Approval(address indexed _owner, address indexed _spender, uint256 _value);
 
     modifier receiverOverflow(address _to, uint _value) {
+        require(_to != address(0), "Invalid recipient address");
         require(coinBalances[_to] + _value >= coinBalances[_to], "Recipient's wallet overflow");
         _;
     }
 
     modifier checkBalance(address _sender, uint _value) {
+        require(_sender != address(0), "Invalid sender address");
         require(coinBalances[_sender] >= _value, "Insufficient funds from the sender");
         _;
     }

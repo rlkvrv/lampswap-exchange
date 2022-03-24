@@ -7,8 +7,6 @@ describe("Pair", function () {
   let pair;
   let acc1Token0;
   let acc1Token1;
-  let acc2Token0;
-  let acc2Token1;
   let fee;
 
   beforeEach(async function () {

@@ -9,10 +9,14 @@ describe("Factory", function () {
   let fee;
 
   beforeEach(async function () {
-    [acc1, acc2, token0, token1, router] = await ethers.getSigners();
+    [acc1, acc2] = await ethers.getSigners();
     const Factory = await ethers.getContractFactory('Factory', acc1);
     factory = await Factory.deploy();
     await factory.deployed();
+
+    const Router = await ethers.getContractFactory("Router", acc1);
+    router = await Router.deploy();
+    await router.deployed();
 
     const Registry = await ethers.getContractFactory("Registry", acc1);
     registry = await Registry.deploy();
@@ -43,6 +47,13 @@ describe("Factory", function () {
   });
 
   it("createPair should create pair and set pair in registry", async function () {
+    const token0 = await (await (await ethers.getContractFactory('LampCoin', acc1))
+      .deploy(10000))
+      .deployed();
+    const token1 = await (await (await ethers.getContractFactory('LampCoin', acc1))
+      .deploy(20000))
+      .deployed();
+  
     await factory.setRegistry(registry.address);
     await factory.createPair(token0.address, token1.address);
 

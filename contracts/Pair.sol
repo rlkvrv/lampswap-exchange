@@ -5,10 +5,13 @@ pragma solidity 0.8.10;
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/utils/Address.sol";
 import "./interfaces/PairInterface.sol";
 import "./interfaces/FeeInterface.sol";
 
 contract Pair is PairInterface, ERC20, ReentrancyGuard, Ownable {
+    using Address for address;
+
     address token0;
     address token1;
     address public router;
@@ -34,6 +37,12 @@ contract Pair is PairInterface, ERC20, ReentrancyGuard, Ownable {
 
     modifier onlyToken(address tokenIn, address tokenOut) {
         require(
+            tokenIn.isContract() &&
+                tokenOut.isContract() &&
+                tokenIn != tokenOut,
+            "Invalid token address"
+        );
+        require(
             tokenIn == token0 || tokenIn == token1,
             "This tokenIn is not found"
         );
@@ -44,14 +53,16 @@ contract Pair is PairInterface, ERC20, ReentrancyGuard, Ownable {
         _;
     }
 
-    event Mint(address indexed sender, uint amount0, uint amount1);
-    event Burn(address indexed sender, uint amountLP);
+    event Mint(address indexed sender, uint256 amount0, uint256 amount1);
+    event Burn(address indexed sender, uint256 amountLP);
 
     function setRouter(address _router) external override onlyOwner {
+        require(_router.isContract(), "Invalid router address");
         router = _router;
     }
 
     function setFee(address _fee) external override onlyOwner {
+        require(_fee.isContract(), "Invalid fee address");
         fee = _fee;
     }
 
@@ -69,6 +80,7 @@ contract Pair is PairInterface, ERC20, ReentrancyGuard, Ownable {
         uint256 amount0,
         uint256 amount1
     ) external override nonReentrant onlyRouter {
+        require(recipient != address(0), "Invalid recipient address");
         uint256 liquidity;
         if (reserves[0] == 0) {
             liquidity = amount0 + amount1;
@@ -78,7 +90,7 @@ contract Pair is PairInterface, ERC20, ReentrancyGuard, Ownable {
             reserves[1] = reserves[1] + amount1;
         } else {
             uint256 _totalSupply = this.totalSupply();
-            liquidity = _totalSupply * amount0 / reserves[0];
+            liquidity = (_totalSupply * amount0) / reserves[0];
             _mint(recipient, liquidity);
             emit Mint(recipient, amount0, amount1);
             reserves[0] = reserves[0] + amount0;
@@ -92,12 +104,13 @@ contract Pair is PairInterface, ERC20, ReentrancyGuard, Ownable {
         nonReentrant
         onlyRouter
     {
+        require(recipient != address(0), "Invalid recipient address");
         require(_amountLP > 0, "Invalid amount");
         ERC20 _token0 = ERC20(token0);
         ERC20 _token1 = ERC20(token1);
         uint256 _totalSupply = this.totalSupply();
-        uint256 token0Amount = reserves[0] * _amountLP / _totalSupply;
-        uint256 token1Amount = reserves[1] * _amountLP / _totalSupply;
+        uint256 token0Amount = (reserves[0] * _amountLP) / _totalSupply;
+        uint256 token1Amount = (reserves[1] * _amountLP) / _totalSupply;
         _burn(recipient, _amountLP);
         emit Burn(recipient, _amountLP);
         _token0.transfer(recipient, token0Amount);
@@ -180,6 +193,10 @@ contract Pair is PairInterface, ERC20, ReentrancyGuard, Ownable {
         uint256 _amoutOut,
         address recipient
     ) external override onlyRouter {
+        require(
+            _token != address(0) && recipient != address(0),
+            "Invalid address"
+        );
         require(_amountIn > 0, "amount too small");
         ERC20 _token0 = ERC20(token0);
         ERC20 _token1 = ERC20(token1);

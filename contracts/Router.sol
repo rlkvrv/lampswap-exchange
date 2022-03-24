@@ -5,17 +5,35 @@ pragma solidity 0.8.10;
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/utils/Address.sol";
 import "./interfaces/RegistryInterface.sol";
 import "./interfaces/PairInterface.sol";
 
 contract Router is ReentrancyGuard, Ownable {
+    using Address for address;
+
     address public registry;
 
+    modifier onlyToken(address tokenIn, address tokenOut) {
+        require(
+            tokenIn.isContract() &&
+                tokenOut.isContract() &&
+                tokenIn != tokenOut,
+            "Invalid token address"
+        );
+        _;
+    }
+
     event Swap(address indexed sender, uint256 amountIn, uint256 amountOut);
-    event AddLiquidity(address indexed sender, uint256 amount0, uint256 amount1);
+    event AddLiquidity(
+        address indexed sender,
+        uint256 amount0,
+        uint256 amount1
+    );
     event RemoveLiquidity(address indexed sender, uint256 amountLP);
 
     function setRegistry(address _registry) external onlyOwner {
+        require(_registry.isContract(), "Invalid registry address");
         registry = _registry;
     }
 
@@ -25,6 +43,10 @@ contract Router is ReentrancyGuard, Ownable {
         uint256 amount0,
         uint256 amount1
     ) external {
+        require(
+            token0.isContract() && token1.isContract() && token0 != token1,
+            "Invalid token address"
+        );
         RegistryInterface Registry = RegistryInterface(registry);
         address pair = Registry.getPair(token0, token1);
         PairInterface Pair = PairInterface(pair);
@@ -39,8 +61,8 @@ contract Router is ReentrancyGuard, Ownable {
             Pair.addLiquidity(msg.sender, amount0, amount1);
             emit AddLiquidity(msg.sender, amount0, amount1);
         } else {
-            uint256 token0Amount = amount1 * _reserve0 / _reserve1;
-            uint256 token1Amount = amount0 * _reserve1 / _reserve0;
+            uint256 token0Amount = (amount1 * _reserve0) / _reserve1;
+            uint256 token1Amount = (amount0 * _reserve1) / _reserve0;
             require(amount0 >= token0Amount, "Insufficient token0 amount");
             require(amount1 >= token1Amount, "Insufficient token1 amount");
             _token0.transferFrom(msg.sender, address(pair), amount0);
@@ -54,7 +76,7 @@ contract Router is ReentrancyGuard, Ownable {
         address token0,
         address token1,
         uint256 amountLP
-    ) external {
+    ) external onlyToken(token0, token1) {
         RegistryInterface Registry = RegistryInterface(registry);
         address pair = Registry.getPair(token0, token1);
         PairInterface Pair = PairInterface(pair);
@@ -67,7 +89,12 @@ contract Router is ReentrancyGuard, Ownable {
         address tokenOut,
         uint256 amountIn,
         uint256 minAmountOut
-    ) external nonReentrant returns (uint256 amountOut) {
+    )
+        external
+        nonReentrant
+        onlyToken(tokenIn, tokenOut)
+        returns (uint256 amountOut)
+    {
         RegistryInterface Registry = RegistryInterface(registry);
         address pair = Registry.getPair(tokenIn, tokenOut);
         PairInterface Pair = PairInterface(pair);
@@ -86,7 +113,12 @@ contract Router is ReentrancyGuard, Ownable {
         address tokenOut,
         uint256 amountOut,
         uint256 maxAmountIn
-    ) external nonReentrant returns (uint256 amountIn) {
+    )
+        external
+        nonReentrant
+        onlyToken(tokenIn, tokenOut)
+        returns (uint256 amountIn)
+    {
         RegistryInterface Registry = RegistryInterface(registry);
         address pair = Registry.getPair(tokenIn, tokenOut);
         PairInterface Pair = PairInterface(pair);
