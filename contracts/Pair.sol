@@ -44,14 +44,6 @@ contract Pair is PairInterface, ERC20, ReentrancyGuard, Ownable {
                 tokenIn != tokenOut,
             "Invalid token address"
         );
-        require(
-            tokenIn == token0 || tokenIn == token1,
-            "This tokenIn is not found"
-        );
-        require(
-            tokenOut == token0 || tokenOut == token1,
-            "This tokenOut is not found"
-        );
         _;
     }
 
@@ -126,10 +118,6 @@ contract Pair is PairInterface, ERC20, ReentrancyGuard, Ownable {
         reserves[1] = reserves[1] - token1Amount;
     }
 
-    // вернут противоположный эмаунт и фии
-    // amountIn посчитать с физами и без физов, разница - это фии который юзер заплатит
-    // возвращаем потом amountIn и фии эмоаунт
-
     function calculateAmoutOut(
         address tokenIn,
         address tokenOut,
@@ -147,19 +135,14 @@ contract Pair is PairInterface, ERC20, ReentrancyGuard, Ownable {
         uint256 _feeDecimals = Fee(fee).feeDecimals();
         uint256 _decimals = 10**_feeDecimals;
 
-        if (tokenIn == token0) {
-            amountOut = (reserves[1] * amountIn) / (reserves[0] + amountIn);
-            amountOutWithFee =
-                (reserves[1] * amountIn * (_decimals - _swapFee)) /
-                ((reserves[0] + amountIn) * _decimals);
-            tokenOutFee = amountOut - amountOutWithFee;
-        } else {
-            amountOut = (reserves[0] * amountIn) / (reserves[1] + amountIn);
-            amountOutWithFee =
-                (reserves[0] * amountIn * (_decimals - _swapFee)) /
-                ((reserves[1] + amountIn) * _decimals);
-            tokenOutFee = amountOut - amountOutWithFee;
-        }
+        uint256 reserveIn = tokenIn == token0 ? reserves[0] : reserves[1];
+        uint256 reserveOut = tokenIn == token0 ? reserves[1] : reserves[0];
+
+        amountOut = (reserveOut * amountIn) / (reserveIn + amountIn);
+        amountOutWithFee =
+            (reserveOut * amountIn * (_decimals - _swapFee)) /
+            ((reserveIn + amountIn) * _decimals);
+        tokenOutFee = amountOut - amountOutWithFee;
     }
 
     function calculateAmoutIn(
@@ -179,43 +162,46 @@ contract Pair is PairInterface, ERC20, ReentrancyGuard, Ownable {
         uint256 _feeDecimals = Fee(fee).feeDecimals();
         uint256 _decimals = 10**_feeDecimals;
 
-        if (tokenIn == token0) {
-            amountIn = (reserves[0] * amountOut) / (reserves[1] - amountOut);
-            amountInWithFee =
-                (reserves[0] * amountOut * _decimals) /
-                ((reserves[1] - amountOut) * (_decimals - _swapFee));
-            tokenInFee = amountInWithFee - amountIn;
-        } else {
-            amountIn = (reserves[1] * amountOut) / (reserves[0] - amountOut);
-            amountInWithFee =
-                (reserves[1] * amountOut * _decimals) /
-                ((reserves[0] - amountOut) * (_decimals - _swapFee));
-            tokenInFee =  amountInWithFee - amountIn;
-        }
+        uint256 reserveIn = tokenIn == token0 ? reserves[0] : reserves[1];
+        uint256 reserveOut = tokenIn == token0 ? reserves[1] : reserves[0];
+
+        amountIn = (reserveIn * amountOut) / (reserveOut - amountOut);
+        amountInWithFee =
+            (reserveIn * amountOut * _decimals) /
+            ((reserveOut - amountOut) * (_decimals - _swapFee));
+        tokenInFee = amountInWithFee - amountIn;
     }
 
     function swap(
-        address _token,
-        uint256 _amountIn,
-        uint256 _amoutOut,
+        address tokenIn,
+        address tokenOut,
+        uint256 amountIn,
+        uint256 amountOut,
+        address tokenFee,
+        uint256 totalFee,
         address recipient
-    ) external override onlyRouter {
-        require(
-            _token != address(0) && recipient != address(0),
-            "Invalid address"
-        );
-        require(_amountIn > 0, "amount too small");
+    ) external override onlyRouter onlyToken(tokenIn, tokenOut) {
+        bool isToken0 = tokenIn == token0;
+        uint256 reserveIn = isToken0 ? reserves[0] : reserves[1];
+        uint256 reserveOut = isToken0 ? reserves[1] : reserves[0];
+        address outputToken = isToken0 ? token1 : token0;
 
-        if (_token == token0) {
-            ERC20(token1).safeTransfer(recipient, _amoutOut);
+        if (tokenFee == tokenOut) {
+            require(
+                ERC20(tokenIn).balanceOf(address(this)) - reserveIn == amountIn
+            );
+            ERC20(outputToken).safeTransfer(recipient, amountOut - totalFee);
 
-            reserves[0] = reserves[0] + _amountIn;
-            reserves[1] = reserves[1] - _amoutOut;
+            reserveIn = reserveIn + amountIn;
+            reserveOut = reserveOut - amountOut - totalFee;
         } else {
-            ERC20(token0).safeTransfer(recipient, _amoutOut);
-
-            reserves[1] = reserves[1] + _amountIn;
-            reserves[0] = reserves[0] - _amoutOut;
+            require(
+                ERC20(tokenIn).balanceOf(address(this)) - reserveIn ==
+                    (amountIn + totalFee)
+            );
+            ERC20(outputToken).safeTransfer(recipient, amountOut);
+            reserveIn = reserveIn + amountIn + totalFee;
+            reserveOut = reserveOut - amountOut;
         }
     }
 }

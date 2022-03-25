@@ -30,9 +30,12 @@ interface PairInterface {
     ) external view returns (uint256 amountIn, uint256 tokenInFee);
 
     function swap(
-        address _token,
-        uint256 _amountIn,
-        uint256 _amoutOut,
+        address tokenIn,
+        address tokenOut,
+        uint256 amountIn,
+        uint256 amountOut,
+        address tokenFee,
+        uint256 totalFee,
         address recipient
     ) external;
 }
