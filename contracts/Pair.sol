@@ -7,7 +7,6 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
-import "hardhat/console.sol";
 import "./interfaces/PairInterface.sol";
 import "./Fee.sol";
 
@@ -52,6 +51,14 @@ contract Pair is PairInterface, ERC20, ReentrancyGuard, Ownable {
     event Burn(address indexed sender, uint256 amountLP);
     event SetRouter(address router);
     event SetFee(address fee);
+    event UpdateReserves(uint256 reserve0, uint256 reserve1);
+
+    function _updateReserves() private {
+        reserves[0] = ERC20(token0).balanceOf(address(this));
+        reserves[1] = ERC20(token1).balanceOf(address(this));
+
+        emit UpdateReserves(reserves[0], reserves[1]);
+    }
 
     function setRouter(address _router) external override onlyOwner {
         require(_router.isContract(), "Invalid router address");
@@ -87,15 +94,13 @@ contract Pair is PairInterface, ERC20, ReentrancyGuard, Ownable {
             liquidity = amount0 + amount1;
             _mint(recipient, liquidity);
             emit Mint(recipient, amount0, amount1);
-            reserves[0] = reserves[0] + amount0;
-            reserves[1] = reserves[1] + amount1;
+            _updateReserves();
         } else {
             uint256 _totalSupply = this.totalSupply();
             liquidity = (_totalSupply * amount0) / reserves[0];
             _mint(recipient, liquidity);
             emit Mint(recipient, amount0, amount1);
-            reserves[0] = reserves[0] + amount0;
-            reserves[1] = reserves[1] + amount1;
+            _updateReserves();
         }
     }
 
@@ -115,8 +120,7 @@ contract Pair is PairInterface, ERC20, ReentrancyGuard, Ownable {
         emit Burn(recipient, _amountLP);
         ERC20(token0).safeTransfer(recipient, token0Amount);
         ERC20(token1).safeTransfer(recipient, token1Amount);
-        reserves[0] = reserves[0] - token0Amount;
-        reserves[1] = reserves[1] - token1Amount;
+        _updateReserves();
     }
 
     function calculateAmoutOut(
@@ -184,10 +188,9 @@ contract Pair is PairInterface, ERC20, ReentrancyGuard, Ownable {
     ) external override onlyRouter onlyToken(tokenIn, tokenOut) {
         bool isToken0 = tokenIn == token0;
         uint256 reserveIn = isToken0 ? reserves[0] : reserves[1];
-        uint256 reserveOut = isToken0 ? reserves[1] : reserves[0];
         address outputToken = isToken0 ? token1 : token0;
 
-        uint256 perfomanceFee = (totalFee *
+        uint256 performanceFee = (totalFee *
             (10**Fee(fee).feeDecimals() - Fee(fee).protocolPerformanceFee())) /
             10**Fee(fee).feeDecimals();
 
@@ -196,20 +199,18 @@ contract Pair is PairInterface, ERC20, ReentrancyGuard, Ownable {
                 ERC20(tokenIn).balanceOf(address(this)) - reserveIn == amountIn
             );
             ERC20(outputToken).safeTransfer(recipient, amountOut - totalFee);
-            ERC20(outputToken).safeTransfer(fee, perfomanceFee);
+            ERC20(outputToken).safeTransfer(fee, performanceFee);
 
-            reserveIn = reserveIn + amountIn;
-            reserveOut = reserveOut - amountOut - totalFee - perfomanceFee;
+            _updateReserves();
         } else {
             require(
                 ERC20(tokenIn).balanceOf(address(this)) - reserveIn ==
                     (amountIn + totalFee)
             );
             ERC20(outputToken).safeTransfer(recipient, amountOut);
-            ERC20(outputToken).safeTransfer(fee, perfomanceFee);
+            ERC20(outputToken).safeTransfer(fee, performanceFee);
 
-            reserveIn = reserveIn + amountIn + totalFee;
-            reserveOut = reserveOut - amountOut - perfomanceFee;
+            _updateReserves();
         }
     }
 }
