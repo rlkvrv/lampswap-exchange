@@ -165,14 +165,14 @@ describe("Router", function () {
 
     it("swapOut should be swap of token0 to token1 if maxAmountIn >= amountIn", async () => {
       await acc1Token0.connect(acc1).approve(router.address, 10);
-      await router.swapOut(acc1Token0.address, acc1Token1.address, 18, 10); // amountIn == 9.99
+      await router.swapOut(acc1Token0.address, acc1Token1.address, 18, 10);
       expect(await acc1Token0.balanceOf(acc1.address)).to.be.eq(9891);
       expect(await acc1Token1.balanceOf(acc1.address)).to.be.eq(19818);
     });
 
     it("swapOut should be swap of token1 to token0 if maxAmountIn >= amountIn", async () => {
       await acc1Token1.connect(acc1).approve(router.address, 22);
-      await router.swapOut(acc1Token1.address, acc1Token0.address, 10, 22); // amountIn == 22,44, почему не 18??
+      await router.swapOut(acc1Token1.address, acc1Token0.address, 10, 22);
       expect(await acc1Token0.balanceOf(acc1.address)).to.be.eq(9910);
       expect(await acc1Token1.balanceOf(acc1.address)).to.be.eq(19778);
     });
