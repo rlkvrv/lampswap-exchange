@@ -7,6 +7,7 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
+import "hardhat/console.sol";
 import "./interfaces/PairInterface.sol";
 import "./Fee.sol";
 
@@ -186,22 +187,29 @@ contract Pair is PairInterface, ERC20, ReentrancyGuard, Ownable {
         uint256 reserveOut = isToken0 ? reserves[1] : reserves[0];
         address outputToken = isToken0 ? token1 : token0;
 
+        uint256 perfomanceFee = (totalFee *
+            (10**Fee(fee).feeDecimals() - Fee(fee).protocolPerformanceFee())) /
+            10**Fee(fee).feeDecimals();
+
         if (tokenFee == tokenOut) {
             require(
                 ERC20(tokenIn).balanceOf(address(this)) - reserveIn == amountIn
             );
             ERC20(outputToken).safeTransfer(recipient, amountOut - totalFee);
+            ERC20(outputToken).safeTransfer(fee, perfomanceFee);
 
             reserveIn = reserveIn + amountIn;
-            reserveOut = reserveOut - amountOut - totalFee;
+            reserveOut = reserveOut - amountOut - totalFee - perfomanceFee;
         } else {
             require(
                 ERC20(tokenIn).balanceOf(address(this)) - reserveIn ==
                     (amountIn + totalFee)
             );
             ERC20(outputToken).safeTransfer(recipient, amountOut);
+            ERC20(outputToken).safeTransfer(fee, perfomanceFee);
+
             reserveIn = reserveIn + amountIn + totalFee;
-            reserveOut = reserveOut - amountOut;
+            reserveOut = reserveOut - amountOut - perfomanceFee;
         }
     }
 }
