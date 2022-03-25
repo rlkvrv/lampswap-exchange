@@ -58,20 +58,20 @@ describe("getTokenPrice", function () {
     await router.addLiquidity(acc1Token0.address, acc1Token1.address, txToken0, txToken1);
   })
 
-  it("should return correct prices", async function () {
-    const value0 = await pair.getTokenPrice(acc1Token0.address, 1n * decimals)
-    const value1 = await pair.getTokenPrice(acc1Token1.address, 1n * decimals)
+  // it("should return correct prices", async function () {
+  //   const value0 = await pair.getTokenPrice(acc1Token0.address, 1n * decimals)
+  //   const value1 = await pair.getTokenPrice(acc1Token1.address, 1n * decimals)
 
-    expect((value0 / BigNumber.from(decimals)).toString()).to.be.eq('1.9603960396039604');
-    expect((value1 / BigNumber.from(decimals)).toString()).to.be.eq('0.49253731343283585');
-  });
+  //   expect((value0 / BigNumber.from(decimals)).toString()).to.be.eq('1.9603960396039604');
+  //   expect((value1 / BigNumber.from(decimals)).toString()).to.be.eq('0.49253731343283585');
+  // });
 
-  it("should return correct prices with zero fee", async function () {
-    await fee.setFeeParams(0, 0, 0);
-    const value0 = await pair.getTokenPrice(acc1Token0.address, 1n * decimals)
-    const value1 = await pair.getTokenPrice(acc1Token1.address, 1n * decimals)
+  // it("should return correct prices with zero fee", async function () {
+  //   await fee.setFeeParams(0, 0, 0);
+  //   const value0 = await pair.getTokenPrice(acc1Token0.address, 1n * decimals)
+  //   const value1 = await pair.getTokenPrice(acc1Token1.address, 1n * decimals)
 
-    expect((value0 / BigNumber.from(decimals)).toString()).to.be.eq('1.9801980198019802');
-    expect((value1 / BigNumber.from(decimals)).toString()).to.be.eq('0.4975124378109453');
-  });
+  //   expect((value0 / BigNumber.from(decimals)).toString()).to.be.eq('1.9801980198019802');
+  //   expect((value1 / BigNumber.from(decimals)).toString()).to.be.eq('0.4975124378109453');
+  // });
 });

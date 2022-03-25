@@ -149,15 +149,6 @@ describe("Router", function () {
       await router.addLiquidity(acc1Token0.address, acc1Token1.address, 100, 200);
     });
 
-
-    it("price of token1 for 10 tokens0 must be 18 token1", async () => {
-      expect(await pair.getTokenPrice(acc1Token0.address, 10)).to.be.eq(18);
-    });
-
-    it("price of token1 for 18 tokens1 must be 8 token0", async () => {
-      expect(await pair.getTokenPrice(acc1Token1.address, 18)).to.be.eq(8);
-    });
-
     it("swapIn should be swap of token0 to token1 if amountOut >= minAmountOut", async () => {
       await acc1Token0.connect(acc1).approve(router.address, 10);
       await router.swapIn(acc1Token0.address, acc1Token1.address, 10, 18);
@@ -203,15 +194,6 @@ describe("Router", function () {
       await acc1Token1.connect(acc1).approve(router.address, 100);
 
       await router.addLiquidity(acc1Token0.address, acc1Token1.address, 100, 100);
-    });
-
-
-    it("price of token1 for 10 tokens0 must be 9 token1", async () => {
-      expect(await pair.getTokenPrice(acc1Token0.address, 10)).to.be.eq(9);
-    });
-
-    it("price of token1 for 10 tokens1 must be 9 token0", async () => {
-      expect(await pair.getTokenPrice(acc1Token1.address, 10)).to.be.eq(9);
     });
 
     it("swapIn should be swap of token0 to token1 if amountOut >= minAmountOut", async () => {

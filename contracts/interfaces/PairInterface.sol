@@ -7,7 +7,7 @@ interface PairInterface {
 
     function setFee(address _fee) external;
 
-    function getReserve(uint index) external view returns (uint256);
+    function getReserve(uint256 index) external view returns (uint256);
 
     function addLiquidity(
         address recipient,
@@ -17,22 +17,17 @@ interface PairInterface {
 
     function removeLiquidity(uint256 lpAmount, address recipient) external;
 
-    function swapIn(
+    function calculateAmoutOut(
         address tokenIn,
         address tokenOut,
         uint256 amountIn
-    ) external returns (uint256 amountOut);
+    ) external view returns (uint256 amountOut, uint256 tokenOutFee);
 
-    function swapOut(
+    function calculateAmoutIn(
         address tokenIn,
         address tokenOut,
         uint256 amountOut
-    ) external returns (uint256 amountIn);
-
-    function getTokenPrice(address _token, uint256 _amount)
-        external
-        view
-        returns (uint256);
+    ) external view returns (uint256 amountIn, uint256 tokenInFee);
 
     function swap(
         address _token,

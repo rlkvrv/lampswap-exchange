@@ -99,9 +99,14 @@ contract Router is ReentrancyGuard, Ownable {
         returns (uint256 amountOut)
     {
         PairInterface Pair = PairInterface(registry.getPair(tokenIn, tokenOut));
-        amountOut = Pair.swapIn(tokenIn, tokenOut, amountIn);
+        uint256 tokenOutFee;
+        (amountOut, tokenOutFee) = Pair.calculateAmoutOut(
+            tokenIn,
+            tokenOut,
+            amountIn
+        );
 
-        require(amountOut >= minAmountOut, "amountOut less than minAmountOut");
+        require((amountOut + tokenOutFee) >= minAmountOut, "amountOut less than minAmountOut");
         ERC20(tokenIn).safeTransferFrom(msg.sender, address(Pair), amountIn);
         Pair.swap(tokenIn, amountIn, amountOut, msg.sender);
 
@@ -120,9 +125,10 @@ contract Router is ReentrancyGuard, Ownable {
         returns (uint256 amountIn)
     {
         PairInterface Pair = PairInterface(registry.getPair(tokenIn, tokenOut));
-        amountIn = Pair.swapOut(tokenIn, tokenOut, amountOut);
+        uint256 tokenInFee;
+        (amountIn, tokenInFee) = Pair.calculateAmoutIn(tokenIn, tokenOut, amountOut);
 
-        require(maxAmountIn >= amountIn, "maxAmountIn less than amountIn");
+        require(maxAmountIn >= (amountIn + tokenInFee), "maxAmountIn less than amountIn");
         ERC20(tokenIn).safeTransferFrom(msg.sender, address(Pair), amountIn);
         Pair.swap(tokenIn, amountIn, amountOut, msg.sender);
 

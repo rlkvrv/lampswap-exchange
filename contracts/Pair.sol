@@ -126,69 +126,71 @@ contract Pair is PairInterface, ERC20, ReentrancyGuard, Ownable {
         reserves[1] = reserves[1] - token1Amount;
     }
 
-    function swapIn(
+    // вернут противоположный эмаунт и фии
+    // amountIn посчитать с физами и без физов, разница - это фии который юзер заплатит
+    // возвращаем потом amountIn и фии эмоаунт
+
+    function calculateAmoutOut(
         address tokenIn,
         address tokenOut,
         uint256 amountIn
     )
         external
+        view
         override
         onlyToken(tokenIn, tokenOut)
-        onlyRouter
-        nonReentrant
-        returns (uint256 amountOut)
+        returns (uint256 amountOut, uint256 tokenOutFee)
     {
-        require(amountIn > 0, "amount too small");
-        amountOut = this.getTokenPrice(tokenIn, amountIn);
-    }
-
-    function swapOut(
-        address tokenIn,
-        address tokenOut,
-        uint256 amountOut
-    )
-        external
-        override
-        onlyToken(tokenIn, tokenOut)
-        onlyRouter
-        nonReentrant
-        returns (uint256 amountIn)
-    {
-        require(amountOut > 0, "amount too small");
+        require(amountIn > 0, "Amount too small");
+        uint256 amountOutWithFee;
         uint256 _swapFee = Fee(fee).swapFee();
         uint256 _feeDecimals = Fee(fee).feeDecimals();
         uint256 _decimals = 10**_feeDecimals;
 
         if (tokenIn == token0) {
-            amountIn =
-                (reserves[0] * amountOut * _decimals) /
-                ((reserves[1] - amountOut) * (_decimals - _swapFee));
+            amountOut = (reserves[1] * amountIn) / (reserves[0] + amountIn);
+            amountOutWithFee =
+                (reserves[1] * amountIn * (_decimals - _swapFee)) /
+                ((reserves[0] + amountIn) * _decimals);
+            tokenOutFee = amountOut - amountOutWithFee;
         } else {
-            amountIn =
-                (reserves[1] * amountOut * _decimals) /
-                ((reserves[0] - amountOut) * (_decimals - _swapFee));
+            amountOut = (reserves[0] * amountIn) / (reserves[1] + amountIn);
+            amountOutWithFee =
+                (reserves[0] * amountIn * (_decimals - _swapFee)) /
+                ((reserves[1] + amountIn) * _decimals);
+            tokenOutFee = amountOut - amountOutWithFee;
         }
     }
 
-    function getTokenPrice(address _token, uint256 _amount)
+    function calculateAmoutIn(
+        address tokenIn,
+        address tokenOut,
+        uint256 amountOut
+    )
         external
         view
         override
-        returns (uint256)
+        onlyToken(tokenIn, tokenOut)
+        returns (uint256 amountIn, uint256 tokenInFee)
     {
-        require(_amount > 0, "amount too small");
+        require(amountOut > 0, "Amount too small");
+        uint256 amountInWithFee;
         uint256 _swapFee = Fee(fee).swapFee();
         uint256 _feeDecimals = Fee(fee).feeDecimals();
         uint256 _decimals = 10**_feeDecimals;
 
-        if (_token == token0) {
-            return
-                (reserves[1] * _amount * (_decimals - _swapFee)) /
-                ((reserves[0] + _amount) * _decimals);
+        if (tokenIn == token0) {
+            amountIn = (reserves[0] * amountOut) / (reserves[1] - amountOut);
+            amountInWithFee =
+                (reserves[0] * amountOut * _decimals) /
+                ((reserves[1] - amountOut) * (_decimals - _swapFee));
+            tokenInFee = amountInWithFee - amountIn;
         } else {
-            return
-                (reserves[0] * _amount * (_decimals - _swapFee)) /
-                ((reserves[1] + _amount) * _decimals);
+            amountIn = (reserves[1] * amountOut) / (reserves[0] - amountOut);
+            amountInWithFee =
+                (reserves[1] * amountOut * _decimals) /
+                ((reserves[0] - amountOut) * (_decimals - _swapFee));
+            tokenInFee =  amountInWithFee - amountIn;
         }
     }
 
