@@ -44,6 +44,18 @@ describe("Pair", function () {
     expect(await pair.fee()).to.be.eq(fee.address);
   });
 
+  it("setRouter should be revert error string", async function () {
+    await expect(
+      pair.setRouter(acc1.address)
+    ).to.be.revertedWith('Invalid router address');
+  });
+
+  it("setFee should be revert error string", async function () {
+    await expect(
+      pair.setFee(acc1.address)
+    ).to.be.revertedWith('Invalid fee address');
+  });
+
   it("only router can make a addLiquidity transaction", async () => {
     await expect(
       pair.connect(acc1).addLiquidity(acc1.address, 100, 200)
